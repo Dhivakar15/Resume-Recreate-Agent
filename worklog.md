@@ -157,3 +157,19 @@ Work Log:
 
 Stage Summary:
 - The 3D system now spans the entire project: landing (hero scene + tilt cards), auth (scene/tilt/flip/seal), dashboard (tilt stats + quick actions + resume cards), builder (3D step flips + tilting live preview), analyzer/job-match (3D score rings with floating numbers + staggered result rises), app shell (nav depth cues). One shared primitives module (three-d/motion.tsx) keeps it consistent, and every effect degrades gracefully under prefers-reduced-motion. No logic, routing, API or accessibility behaviour changed.
+
+---
+Task ID: feat-6
+Agent: main (Z.ai Code)
+Task: First page (landing) recolored to a new classical palette ("change another classical colour on first page of project")
+
+Work Log:
+- Chose "Heritage Ivory & Emerald with Antique Gold" as the new classical palette for the landing page: warm ivory/parchment canvas (#fbf8f0/#f5efdc/#f6f1e1) replacing the modern teal wash, deep heritage emerald (#0f6b45/#136b43/#0d5030) for CTAs/numbers/checks, antique gold (#d4a548/#8a6d1f/#c9a04a) for ornaments/chips/badges/hairlines — deliberately the light-counterpart of the auth pages' dark "Emerald & Antique Gold" (feat-4), so landing → login/register now reads as one classical system.
+- landing-view.tsx: root bg ivory (dark:background kept); navbar/footer ivory glass with gold hairline borders; hero parchment gradient + gold/emerald blobs; gold Sparkles pill (ivory-gold light, gold-tint dark); "ATS-Friendly" heading keyword now emerald→antique-gold gradient (light #0b4d34→#9a7a26, dark emerald-300→#d4a548); hero Create Resume CTA explicitly deep emerald with white text + emerald shadow (dark variants); resume-paper mockup: emerald section bars, gold skill pills, gold-tinted paper border, ATS badge deep emerald, Keyword Match badge antique gold #8a6d1f (4.6:1 on white text), PDF+LaTeX icon gold; feature icon chips now antique-gold squares (#f3ead2 bg, #8a6d1f icon, gold ring); How-it-works band parchment with gold top/bottom hairlines, gold connector line, emerald number circles ringed with the band colour; benefits checkmarks emerald + card gold border; final CTA band deep emerald gradient with gold glow blob, ivory-hover white button; all teal-*/emerald-500+ light-mode classes replaced (grep-verified: only intentional dark-mode teal-950 tints remain).
+- hero-scene.tsx: cube faces + floating sheets switched from cool white glass to warm ivory glass (#fffdf4/60-75) with emerald frames and softened emerald shadows — gold dust untouched, already tying the page to the studio theme.
+- logo.tsx: brand mark box teal→emerald gradient replaced with heritage emerald (#136b43→#0d5030) and "Recreate" now #0f6b45 (dark: emerald-400) — visible on landing navbar/footer AND the app shell, unifying the brand with the classical entry experience.
+- Verification (agent-browser): desktop 1440x900 hero/features/how-it-works/benefits/CTA/footer all render the new palette (gold chips, parchment band, emerald circles + gold line, emerald CTA band with gold blob); mobile 390x844 hero clean with no overflow; dark mode verified by forcing the html.dark class (next-themes is class-based, default light) — near-black bg with emerald/gold accents coherent; login page unaffected (dark Emerald & Antique Gold scene, seal, showcase, card all intact); real sign-in carol-no-cookie@example.com → #/dashboard works, app-shell logo shows the new emerald brand; zero page errors, zero console errors (only HMR/DevTools info).
+- bunx eslint on the 3 touched files: clean. bunx tsc --noEmit: clean for app code. dev.log healthy (login/resumes 200s).
+
+Stage Summary:
+- The first page now presents the classical "Heritage Ivory & Emerald with Antique Gold" identity — a light parchment counterpart to the dark classical auth pages — with all 3D effects, content, routing, auth behaviour and accessibility untouched. Brand mark unified to heritage emerald app-wide. No API, logic or data changes.

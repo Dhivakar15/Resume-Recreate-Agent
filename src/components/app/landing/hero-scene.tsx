@@ -74,7 +74,7 @@ function GlassCube({ size, duration, spin, className, parallaxX, parallaxY }: Cu
             return (
               <div
                 key={index}
-                className="absolute inset-0 flex items-center justify-center border border-emerald-600/25 bg-white/50 shadow-[inset_0_0_18px_rgba(13,148,136,0.08)] backdrop-blur-[2px] dark:border-emerald-500/20 dark:bg-emerald-900/30"
+                className="absolute inset-0 flex items-center justify-center border border-[#136b43]/25 bg-[#fffdf4]/60 shadow-[inset_0_0_18px_rgba(19,107,67,0.08)] backdrop-blur-[2px] dark:border-emerald-500/20 dark:bg-emerald-900/30"
                 style={{ transform, width: size, height: size }}
               >
                 <Icon className="h-[38%] w-[38%] text-emerald-700/60 dark:text-emerald-300/60" strokeWidth={1.5} />
@@ -104,7 +104,7 @@ function FloatingSheet({ className, depth, delay = 0, parallaxX, parallaxY }: Sh
       aria-hidden
     >
       <motion.div
-        className="w-36 rounded-lg border border-emerald-600/20 bg-white/70 p-4 shadow-[0_24px_50px_-24px_rgba(6,78,59,0.35)] backdrop-blur-[3px] dark:border-emerald-500/20 dark:bg-emerald-950/50"
+        className="w-36 rounded-lg border border-[#136b43]/20 bg-[#fffdf4]/75 p-4 shadow-[0_24px_50px_-24px_rgba(6,78,59,0.3)] backdrop-blur-[3px] dark:border-emerald-500/20 dark:bg-emerald-950/50"
         style={{ transform: `rotateX(10deg) rotateY(-14deg) translateZ(${depth}px)` }}
         animate={{ y: [0, -12, 0] }}
         transition={{ repeat: Infinity, duration: 7, delay, ease: 'easeInOut' }}

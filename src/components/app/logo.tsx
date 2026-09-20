@@ -9,11 +9,11 @@ export function Logo({ className, size = 'md', light = false }: { className?: st
   const text = size === 'sm' ? 'text-sm' : size === 'lg' ? 'text-xl' : 'text-base';
   return (
     <span className={cn('inline-flex items-center gap-2.5', className)}>
-      <span className={cn('flex items-center justify-center bg-gradient-to-br from-teal-600 to-emerald-600 text-white shadow-sm', box)}>
+      <span className={cn('flex items-center justify-center bg-gradient-to-br from-[#136b43] to-[#0d5030] text-white shadow-sm', box)}>
         <FileText className={icon} strokeWidth={2.2} />
       </span>
       <span className={cn('font-semibold tracking-tight', text, light ? 'text-white' : 'text-foreground')}>
-        Resume<span className="text-teal-600">Recreate</span>
+        Resume<span className="text-[#0f6b45] dark:text-emerald-400">Recreate</span>
         <span className={light ? 'text-white/60' : 'text-muted-foreground'}> AI</span>
       </span>
     </span>
