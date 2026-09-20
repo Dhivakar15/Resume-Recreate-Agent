@@ -11,7 +11,7 @@ A real, working AI-powered resume creation & recreation platform. Enter your per
 | Area | What works |
 | --- | --- |
 | **Landing page** | Modern SaaS marketing page — hero, features, how-it-works, benefits, footer |
-| **Authentication** | Register / login / logout, bcrypt password hashing, JWT session in an httpOnly cookie, protected views |
+| **Authentication** | Register / login / logout, bcrypt password hashing, JWT session (httpOnly cookie **+** Bearer-token fallback), protected views |
 | **Dashboard** | Welcome header, stats, recent resumes, full resume list — view, edit, duplicate, rename, delete, download |
 | **Resume builder** | 10-step guided wizard (Personal → Summary → Education → Skills → Experience → Internships → Projects → Certifications → Achievements → Languages) with autosave |
 | **Target job role** | Pick (or type) a target role; all AI operations tailor wording to it |
@@ -34,7 +34,7 @@ A real, working AI-powered resume creation & recreation platform. Enter your per
 - **UI:** Tailwind CSS 4 + shadcn/ui + Lucide icons + Framer Motion
 - **State:** Zustand (client state)
 - **Database:** Prisma ORM (SQLite for local dev; portable to PostgreSQL — see below)
-- **Auth:** bcryptjs + JWT (`jose`) in an httpOnly cookie
+- **Auth:** bcryptjs + JWT (`jose`) — httpOnly cookie as primary channel, `Authorization: Bearer` fallback for cookie-blocked contexts
 - **AI:** Pluggable AI service layer (`src/lib/ai.ts`) over `z-ai-web-dev-sdk`, configured via environment variables
 - **PDF:** `pdf-lib` (server-side, real text)
 - **File parsing:** `unpdf` (PDF) + `mammoth` (DOCX)
@@ -153,7 +153,7 @@ Everything else — including the JSON resume payloads — is portable as-is.
 ## 🔒 Security Notes
 
 - Passwords hashed with bcrypt (never stored or logged in plain text).
-- Sessions are signed JWTs in `httpOnly`, `sameSite=lax` cookies.
+- Sessions are signed JWTs delivered over two channels: an `httpOnly`, `sameSite=lax` cookie (primary) and an `Authorization: Bearer` header (fallback). The fallback keeps sign-in working when the app is embedded in a cross-origin iframe (preview panels) where browsers block third-party cookies — the token lives in `localStorage` and every client request attaches it automatically.
 - Every API route authenticates via the session and scopes queries to the owning user.
 - Uploads are validated by type and size (≤ 5 MB, PDF/DOCX only) and parsed in-memory — files are never written to disk.
 - Rate limiting on auth, upload and AI endpoints; zod validation on every payload.

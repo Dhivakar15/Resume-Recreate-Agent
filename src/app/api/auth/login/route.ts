@@ -21,7 +21,8 @@ export async function POST(req: Request) {
 
     const token = await createSessionToken(user.id);
     await setSessionCookie(token);
-    return ok({ user: { id: user.id, name: user.name, email: user.email, createdAt: user.createdAt } });
+    // Token also returned for the localStorage/Bearer fallback (see register).
+    return ok({ user: { id: user.id, name: user.name, email: user.email, createdAt: user.createdAt }, token });
   } catch (e) {
     return handleError(e);
   }

@@ -24,7 +24,10 @@ export async function POST(req: Request) {
 
     const token = await createSessionToken(user.id);
     await setSessionCookie(token);
-    return ok({ user }, 201);
+    // The token is also returned so the SPA can keep it in localStorage and
+    // send it as `Authorization: Bearer` — this keeps sessions working in
+    // contexts where cookies are blocked (e.g. embedded preview iframes).
+    return ok({ user, token });
   } catch (e) {
     return handleError(e);
   }

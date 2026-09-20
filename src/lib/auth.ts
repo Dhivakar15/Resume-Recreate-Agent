@@ -1,7 +1,7 @@
 import 'server-only';
 import bcrypt from 'bcryptjs';
 import { SignJWT, jwtVerify } from 'jose';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { db } from '@/lib/db';
 
 export const SESSION_COOKIE = 'rra_session';
@@ -37,22 +37,53 @@ export interface SessionUser {
   createdAt: Date;
 }
 
-/** Reads the httpOnly session cookie and resolves the current user (or null). */
-export async function getSessionUser(): Promise<SessionUser | null> {
-  const store = await cookies();
-  const token = store.get(SESSION_COOKIE)?.value;
+/** Verifies a session JWT and resolves the user id (or null). */
+async function resolveToken(token: string | undefined): Promise<string | null> {
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, getSecret());
-    if (!payload.sub) return null;
-    const user = await db.user.findUnique({
-      where: { id: payload.sub },
-      select: { id: true, email: true, name: true, createdAt: true },
-    });
-    return user;
+    return payload.sub ?? null;
   } catch {
     return null;
   }
+}
+
+/**
+ * Reads the session from the request and resolves the current user (or null).
+ *
+ * Two credential channels are supported on purpose:
+ *  1. `Authorization: Bearer <jwt>` header — used by the SPA when cookies are
+ *     unavailable (e.g. the app is embedded in a cross-origin preview iframe
+ *     where third-party cookies are blocked by the browser).
+ *  2. The httpOnly `rra_session` cookie — primary channel for normal usage.
+ */
+export async function getSessionUser(): Promise<SessionUser | null> {
+  // 1) Bearer token (works even when cookies are blocked).
+  try {
+    const headerList = await headers();
+    const auth = headerList.get('authorization');
+    if (auth?.toLowerCase().startsWith('bearer ')) {
+      const userId = await resolveToken(auth.slice(7).trim());
+      if (userId) {
+        const user = await db.user.findUnique({
+          where: { id: userId },
+          select: { id: true, email: true, name: true, createdAt: true },
+        });
+        if (user) return user;
+      }
+    }
+  } catch {
+    // headers() unavailable outside request scope — fall through to cookies.
+  }
+
+  // 2) httpOnly cookie.
+  const store = await cookies();
+  const userId = await resolveToken(store.get(SESSION_COOKIE)?.value);
+  if (!userId) return null;
+  return db.user.findUnique({
+    where: { id: userId },
+    select: { id: true, email: true, name: true, createdAt: true },
+  });
 }
 
 export async function setSessionCookie(token: string): Promise<void> {

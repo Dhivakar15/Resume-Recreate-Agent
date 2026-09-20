@@ -75,3 +75,23 @@ Work Log:
 
 Stage Summary:
 - Production-ready app complete: lint clean, tsc clean (app code), dev server healthy on port 3000, README.md + .env.example written, .env gitignored. Demo account: arjun.demo@example.com / password123 (sample data inside, clearly labelled).
+
+---
+Task ID: fix-1
+Agent: main (Z.ai Code)
+Task: Correct reported issue — session loss after register/login in the preview environment
+
+Work Log:
+- Diagnosed from dev.log: `POST /api/auth/register 201` immediately followed by `GET /api/resumes 401`. Verified with curl + agent-browser that register/login set the cookie correctly on localhost — the failure is specific to the preview origin (browser origin preview-chat-*.space-z.ai), where the app runs embedded in a cross-origin iframe and browsers with third-party-cookie restrictions refuse to store the httpOnly session cookie. Result: user registers, is thrown back to sign-in, cannot stay logged in.
+- Fix (hybrid session auth, both channels fully backwards compatible):
+  - src/lib/auth.ts: getSessionUser() now reads `Authorization: Bearer <jwt>` first (via next/headers), falls back to the httpOnly cookie. Extracted shared resolveToken().
+  - src/app/api/auth/register/route.ts + login/route.ts: response now also returns the session `token` so the SPA can keep it client-side.
+  - src/lib/client/api.ts: added getStoredToken/setStoredToken/clearStoredToken (localStorage, try/catch guarded); apiFetch and downloadFile attach `Authorization: Bearer` when a token exists; stale tokens are auto-cleared on any non-auth 401.
+  - src/stores/auth-store.ts: persist token on login/register, clear on logout, clear stale token in init() when /api/auth/me resolves to no user.
+  - next.config.ts: added allowedDevOrigins ["*.space-z.ai"] to silence cross-origin dev-asset warnings.
+- Verified: curl register → token in body → /api/resumes + /api/auth/me + PDF + LaTeX all 200 with Bearer ONLY; 401 without any credential (security intact). Browser-verified full cycle: register → dashboard; cookies cleared + reload → session survives via Bearer (the exact previously-broken scenario); resume created + PDF downloaded with zero cookies; logout clears localStorage token AND cookie; login restores session.
+- bun run lint: clean. bunx tsc --noEmit: app code clean (only pre-existing errors in unrelated examples/ and skills/ template folders). No new errors in dev.log; no browser console errors.
+
+Stage Summary:
+- Root cause: cookie-only sessions break in the embedded preview iframe (third-party cookies blocked). Sessions now work over httpOnly cookie OR Authorization Bearer header, so auth is environment-independent (localhost, Vercel production, and preview iframes).
+- No data-model, route-structure or UI changes; fully backwards compatible with existing accounts (cookie-only sessions keep working).
