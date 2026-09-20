@@ -1,0 +1,76 @@
+// Resume Recreate Agent AI — Database Schema
+// Prisma ORM. Local development uses SQLite (zero-config).
+// For production (e.g. Vercel + Postgres), switch `provider` to "postgresql"
+// and update DATABASE_URL — the schema is fully portable.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String           @id @default(cuid())
+  email           String           @unique
+  name            String
+  passwordHash    String
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  resumes         Resume[]
+  jobDescriptions JobDescription[]
+}
+
+model Resume {
+  id              String           @id @default(cuid())
+  userId          String
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title           String           @default("Untitled Resume")
+  targetRole      String?
+  template        String           @default("modern")
+  // JSON-encoded ResumeData (sections: personal, summary, education, skills, ...)
+  data            String
+  versions        ResumeVersion[]
+  analyses        AIAnalysis[]
+  jobDescriptions JobDescription[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model ResumeVersion {
+  id        String   @id @default(cuid())
+  resumeId  String
+  resume    Resume   @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  label     String
+  data      String
+  createdAt DateTime @default(now())
+}
+
+model JobDescription {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resumeId  String?
+  resume    Resume?     @relation(fields: [resumeId], references: [id], onDelete: SetNull)
+  title     String
+  company   String?
+  content   String
+  // JSON-encoded JobMatchAnalysis
+  analysis  String?
+  createdAt DateTime    @default(now())
+}
+
+model AIAnalysis {
+  id         String   @id @default(cuid())
+  resumeId   String
+  resume     Resume   @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  // "ATS" | "JOB_MATCH"
+  type       String
+  targetRole String?
+  score      Int?
+  // JSON-encoded ATSAnalysis | JobMatchAnalysis
+  result     String
+  createdAt  DateTime @default(now())
+}
