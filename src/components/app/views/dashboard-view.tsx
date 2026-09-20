@@ -10,6 +10,7 @@ import { apiFetch, downloadFile } from '@/lib/client/api';
 import { NewResumeDialog } from '@/components/app/new-resume-dialog';
 import { ViewResumeDialog } from '@/components/app/view-resume-dialog';
 import { LoadingButton } from '@/components/app/loading-button';
+import { Float3D, Rise3D, Tilt3D } from '@/components/app/three-d/motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -114,7 +115,8 @@ function ResumeCard({
   };
 
   return (
-    <Card className="flex min-w-0 flex-col transition-shadow hover:shadow-md">
+    <Tilt3D className="h-full" max={3}>
+      <Card className="flex h-full min-w-0 flex-col transition-shadow hover:shadow-lg">
       <CardHeader className="pb-3">
         <div className="flex min-w-0 items-start justify-between gap-2">
           <div className="min-w-0">
@@ -243,6 +245,7 @@ function ResumeCard({
         </DialogContent>
       </Dialog>
     </Card>
+    </Tilt3D>
   );
 }
 
@@ -302,52 +305,64 @@ export function DashboardView({ section }: { section: 'overview' | 'resumes' }) 
         <>
           {/* Stats */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {stats.map((s) => {
+            {stats.map((s, i) => {
               const Icon = s.icon;
               return (
-                <Card key={s.label}>
-                  <CardContent className="flex items-center gap-4 p-5">
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-300">
-                      <Icon className="h-5 w-5" aria-hidden />
-                    </span>
-                    <div>
-                      <p className="text-2xl font-bold leading-none">{s.value}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">{s.label}</p>
-                    </div>
-                  </CardContent>
-                </Card>
+                <Rise3D key={s.label} delay={i * 0.06} className="h-full">
+                  <Tilt3D className="h-full" max={4}>
+                    <Card className="h-full">
+                      <CardContent className="flex items-center gap-4 p-5">
+                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-300">
+                          <Icon className="h-5 w-5" aria-hidden />
+                        </span>
+                        <div>
+                          <p className="text-2xl font-bold leading-none">{s.value}</p>
+                          <p className="mt-1 text-xs text-muted-foreground">{s.label}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Tilt3D>
+                </Rise3D>
               );
             })}
           </div>
 
           {/* Quick actions */}
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <button
-              type="button"
-              onClick={() => navigate('analyzer')}
-              className="group flex min-h-[44px] items-center gap-4 rounded-xl border bg-card p-5 text-left transition-shadow hover:shadow-md"
-            >
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-teal-600 text-white">
-                <ScanSearch className="h-5 w-5" aria-hidden />
-              </span>
-              <span>
-                <span className="block font-semibold">AI Resume Analyzer</span>
-                <span className="block text-sm text-muted-foreground">Get your AI Estimated ATS Score & fixes</span>
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('jobmatch')}
-              className="group flex min-h-[44px] items-center gap-4 rounded-xl border bg-card p-5 text-left transition-shadow hover:shadow-md"
-            >
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white">
-                <BriefcaseBusiness className="h-5 w-5" aria-hidden />
-              </span>
-              <span>
-                <span className="block font-semibold">Job Description Match</span>
-                <span className="block text-sm text-muted-foreground">Paste a job posting, see how you match</span>
-              </span>
-            </button>
+            <Rise3D delay={0.1}>
+              <Tilt3D max={3.5}>
+                <button
+                  type="button"
+                  onClick={() => navigate('analyzer')}
+                  className="group flex min-h-[44px] w-full items-center gap-4 rounded-xl border bg-card p-5 text-left transition-all hover:-translate-y-0.5 hover:shadow-md"
+                >
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-teal-600 text-white transition-transform duration-300 group-hover:-rotate-3 group-hover:scale-110">
+                    <ScanSearch className="h-5 w-5" aria-hidden />
+                  </span>
+                  <span>
+                    <span className="block font-semibold">AI Resume Analyzer</span>
+                    <span className="block text-sm text-muted-foreground">Get your AI Estimated ATS Score & fixes</span>
+                  </span>
+                </button>
+              </Tilt3D>
+            </Rise3D>
+            <Rise3D delay={0.16}>
+              <Tilt3D max={3.5}>
+                <button
+                  type="button"
+                  onClick={() => navigate('jobmatch')}
+                  className="group flex min-h-[44px] w-full items-center gap-4 rounded-xl border bg-card p-5 text-left transition-all hover:-translate-y-0.5 hover:shadow-md"
+                >
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white transition-transform duration-300 group-hover:-rotate-3 group-hover:scale-110">
+                    <BriefcaseBusiness className="h-5 w-5" aria-hidden />
+                  </span>
+                  <span>
+                    <span className="block font-semibold">Job Description Match</span>
+                    <span className="block text-sm text-muted-foreground">Paste a job posting, see how you match</span>
+                  </span>
+                </button>
+              </Tilt3D>
+            </Rise3D>
           </div>
 
           {/* Recent resumes */}
@@ -370,8 +385,10 @@ export function DashboardView({ section }: { section: 'overview' | 'resumes' }) 
               <EmptyResumes onCreate={() => setCreateOpen(true)} />
             ) : (
               <div className="grid gap-4 sm:grid-cols-2">
-                {resumes.slice(0, 4).map((r) => (
-                  <ResumeCard key={r.id} resume={r} onView={(res) => setViewTarget(res.id)} onDelete={setDeleteTarget} />
+                {resumes.slice(0, 4).map((r, i) => (
+                  <Rise3D key={r.id} delay={i * 0.05} className="h-full">
+                    <ResumeCard resume={r} onView={(res) => setViewTarget(res.id)} onDelete={setDeleteTarget} />
+                  </Rise3D>
                 ))}
               </div>
             )}
@@ -391,8 +408,10 @@ export function DashboardView({ section }: { section: 'overview' | 'resumes' }) 
             <EmptyResumes onCreate={() => setCreateOpen(true)} />
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {resumes.map((r) => (
-                <ResumeCard key={r.id} resume={r} onView={(res) => setViewTarget(res.id)} onDelete={setDeleteTarget} />
+              {resumes.map((r, i) => (
+                <Rise3D key={r.id} delay={Math.min(i, 8) * 0.04} className="h-full">
+                  <ResumeCard resume={r} onView={(res) => setViewTarget(res.id)} onDelete={setDeleteTarget} />
+                </Rise3D>
               ))}
             </div>
           )}
@@ -433,9 +452,11 @@ function EmptyResumes({ onCreate }: { onCreate: () => void }) {
   return (
     <Card className="border-dashed">
       <CardContent className="flex flex-col items-center justify-center gap-4 py-14 text-center">
-        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-50 text-teal-600 dark:bg-teal-950 dark:text-teal-300">
-          <FolderOpen className="h-7 w-7" aria-hidden />
-        </span>
+        <Float3D duration={5}>
+          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-50 text-teal-600 shadow-lg shadow-teal-600/10 dark:bg-teal-950 dark:text-teal-300">
+            <FolderOpen className="h-7 w-7" aria-hidden />
+          </span>
+        </Float3D>
         <div>
           <p className="font-semibold">You haven&apos;t created a resume yet.</p>
           <p className="mt-1 max-w-sm text-sm text-muted-foreground">

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { AppShell } from '@/components/app/app-shell';
 import { LoadingButton } from '@/components/app/loading-button';
+import { Float3D, Rise3D, Tilt3D } from '@/components/app/three-d/motion';
 import { apiFetch } from '@/lib/client/api';
 import { useResumesStore } from '@/stores/resumes-store';
 import { type JobMatchAnalysis } from '@/types/resume';
@@ -42,7 +43,7 @@ function ScoreRing({ score, caption }: { score: number; caption: string }) {
   const clamped = Math.max(0, Math.min(100, Math.round(score)));
   const tone = scoreTone(clamped);
   return (
-    <div className="relative h-40 w-40 shrink-0 sm:h-44 sm:w-44">
+    <div className="relative h-40 w-40 shrink-0 sm:h-44 sm:w-44" style={{ transformStyle: 'preserve-3d' }}>
       <svg
         viewBox="0 0 120 120"
         className="h-full w-full -rotate-90"
@@ -62,7 +63,7 @@ function ScoreRing({ score, caption }: { score: number; caption: string }) {
           strokeDashoffset={circumference * (1 - clamped / 100)}
         />
       </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
+      <div className="absolute inset-0 flex flex-col items-center justify-center [transform:translateZ(28px)]">
         <span className={cn('text-4xl font-bold tabular-nums sm:text-5xl', tone.text)}>{clamped}</span>
         <span className="text-xs text-muted-foreground">/ 100</span>
       </div>
@@ -165,6 +166,7 @@ export function JobMatchView({ preselectedId }: { preselectedId?: string }) {
         <Separator />
 
         {/* Input card */}
+        <Rise3D>
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
@@ -246,11 +248,13 @@ export function JobMatchView({ preselectedId }: { preselectedId?: string }) {
             </div>
           </CardContent>
         </Card>
+        </Rise3D>
 
         {analysis && requirements ? (
           /* ── Results ── */
           <div className="space-y-6" aria-live="polite">
             {/* 1. Extracted requirements */}
+            <Rise3D distance={20} tilt={6}>
             <Card>
               <CardHeader>
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -335,9 +339,11 @@ export function JobMatchView({ preselectedId }: { preselectedId?: string }) {
                 )}
               </CardContent>
             </Card>
+            </Rise3D>
 
             {/* 2. Match section (only when a resume was selected) */}
             {showMatch && match && (
+              <Rise3D delay={0.08} distance={20} tilt={6}>
               <Card className="border-teal-600/20">
                 <CardHeader>
                   <CardTitle className="text-base">Resume match</CardTitle>
@@ -347,7 +353,9 @@ export function JobMatchView({ preselectedId }: { preselectedId?: string }) {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="flex flex-col items-center gap-6 sm:flex-row sm:gap-8">
-                    <ScoreRing score={match.score} caption="Job match score" />
+                    <Tilt3D max={7}>
+                      <ScoreRing score={match.score} caption="Job match score" />
+                    </Tilt3D>
                     <p className="text-sm text-muted-foreground sm:max-w-xs">
                       The match score compares your resume against the required skills, preferred skills and keywords
                       extracted from this job description.
@@ -425,6 +433,7 @@ export function JobMatchView({ preselectedId }: { preselectedId?: string }) {
                   </div>
                 </CardContent>
               </Card>
+              </Rise3D>
             )}
 
             {/* Disclaimer */}
@@ -437,12 +446,14 @@ export function JobMatchView({ preselectedId }: { preselectedId?: string }) {
           /* Empty state: nothing analyzed yet */
           <Card className="border-dashed">
             <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
-              <span
-                className="flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground"
-                aria-hidden
-              >
-                <BriefcaseBusiness className="h-7 w-7" />
-              </span>
+              <Float3D duration={5} wobble={3}>
+                <span
+                  className="flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground"
+                  aria-hidden
+                >
+                  <BriefcaseBusiness className="h-7 w-7" />
+                </span>
+              </Float3D>
               <p className="max-w-md text-sm text-muted-foreground">
                 Paste a job description above and run the analysis to extract its requirements
                 {resumesLoaded && resumes.length > 0 ? ' and see how well your resume matches.' : '.'}

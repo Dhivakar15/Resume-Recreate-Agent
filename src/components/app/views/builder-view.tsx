@@ -7,6 +7,7 @@ import { navigate } from '@/lib/client/navigation';
 import { LoadingButton } from '@/components/app/loading-button';
 import { LatexDialog } from '@/components/app/latex-dialog';
 import { ResumePreview } from '@/components/resume/resume-preview';
+import { FlipIn3D, Rise3D, Tilt3D } from '@/components/app/three-d/motion';
 import { StepPersonal, StepSummary, StepEducation } from '@/components/app/builder/steps-basic';
 import { StepSkills } from '@/components/app/builder/steps-skills';
 import { StepExperience, StepInternships, StepProjects } from '@/components/app/builder/steps-history';
@@ -356,6 +357,7 @@ export function BuilderView({ resumeId }: { resumeId: string }) {
         {/* ── Editor column ── */}
         <div className="min-w-0 space-y-4">
           {/* Target job role */}
+          <Rise3D>
           <Card className="p-4">
             <div className="flex items-start gap-3">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-300">
@@ -382,6 +384,7 @@ export function BuilderView({ resumeId }: { resumeId: string }) {
               </div>
             </div>
           </Card>
+          </Rise3D>
 
           {/* Step chips */}
           <div className="flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Builder steps">
@@ -396,10 +399,10 @@ export function BuilderView({ resumeId }: { resumeId: string }) {
                   aria-selected={active}
                   onClick={() => setStep(s.key)}
                   className={cn(
-                    'flex min-h-[40px] shrink-0 items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition-colors',
+                    'flex min-h-[40px] shrink-0 items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition-all duration-200',
                     active
-                      ? 'border-teal-600 bg-teal-600 text-white shadow-sm'
-                      : 'border-input bg-background text-muted-foreground hover:bg-muted hover:text-foreground',
+                      ? 'border-teal-600 bg-teal-600 text-white shadow-md shadow-teal-600/25'
+                      : 'border-input bg-background text-muted-foreground hover:-translate-y-0.5 hover:bg-muted hover:text-foreground',
                   )}
                 >
                   {isDone(s.key) && !active ? (
@@ -425,7 +428,9 @@ export function BuilderView({ resumeId }: { resumeId: string }) {
                 Step {stepIndex + 1} of {STEPS.length}: {STEPS[stepIndex].title}
               </h2>
             </div>
-            <CurrentStep />
+            <FlipIn3D switchKey={step}>
+              <CurrentStep />
+            </FlipIn3D>
 
             <div className="mt-6 flex items-center justify-between border-t pt-4">
               <Button variant="outline" className="min-h-[44px]" onClick={() => setStep(STEPS[Math.max(0, stepIndex - 1)].key)} disabled={stepIndex === 0}>
@@ -440,7 +445,7 @@ export function BuilderView({ resumeId }: { resumeId: string }) {
         </div>
 
         {/* ── Preview column (below editor on mobile, sticky right on desktop) ── */}
-        <div className="min-w-0 lg:sticky lg:top-20 lg:self-start">
+        <Rise3D className="min-w-0 lg:sticky lg:top-20 lg:self-start" distance={20} tilt={5}>
           <div className="mb-3 flex items-center justify-between">
             <h2 className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
               <Wand2 className="h-4 w-4 text-teal-600" aria-hidden /> Live Preview
@@ -448,9 +453,11 @@ export function BuilderView({ resumeId }: { resumeId: string }) {
             <span className="text-xs text-muted-foreground">{TEMPLATE_LABELS[template]}</span>
           </div>
           <div className="lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto lg:rounded-xl lg:pr-1">
-            <ResumePreview data={data} template={template} />
+            <Tilt3D max={2.5}>
+              <ResumePreview data={data} template={template} />
+            </Tilt3D>
           </div>
-        </div>
+        </Rise3D>
       </div>
 
       <LatexDialog resumeId={resumeId} open={latexOpen} onOpenChange={setLatexOpen} />

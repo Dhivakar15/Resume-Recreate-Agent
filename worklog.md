@@ -139,3 +139,21 @@ Work Log:
 
 Stage Summary:
 - The app now has one coherent visual system: light teal/emerald landing with genuine 3D hero (tilting mockup, glass cubes, floating sheets, gold dust, tilt cards) flowing into the dark "Emerald & Antique Gold" classical auth experience. No logic, routing, API or accessibility behaviour changed anywhere.
+
+---
+Task ID: feat-5
+Agent: main (Z.ai Code)
+Task: Full project 3D effects ("i want full project of 3D effects")
+
+Work Log:
+- Created src/components/app/three-d/motion.tsx — shared 3D primitives library used app-wide, each reduced-motion safe: Tilt3D (pointer-tracking tilt with springs, extracted from landing-view so landing/auth/app views share one implementation), Rise3D (scroll/mount-triggered rise from below while un-tilting, rotateX -8°→0), Float3D (gentle infinite float + wobble for icons/empty states), FlipIn3D (content flips in with 3D rotation whenever switchKey changes, perspective 900px).
+- landing-view.tsx: removed local Tilt3D, imports the shared one — behaviour identical (verified hero mockup tilt still active).
+- dashboard-view.tsx: stat cards wrapped in Rise3D (staggered 0.06s) + Tilt3D max 4; both quick-action buttons Rise3D + Tilt3D max 3.5 with icon scale/-3° rotate on hover and -translate-y-0.5 lift; ResumeCard root is now Tilt3D max 3 (h-full chain preserved, dialogs still portal correctly); recent/all resumes wrapped in Rise3D staggered; EmptyResumes icon floats via Float3D.
+- builder-view.tsx: step content wrapped in FlipIn3D switchKey={step} — every step change flips in with a 3D rotateX transition; target-role card Rise3D; live preview column Rise3D + ResumePreview inside Tilt3D max 2.5 (subtle, readability preserved); step chips transition-all with active shadow-md shadow-teal-600/25 and inactive hover:-translate-y-0.5 lift.
+- analyzer-view.tsx + job-match-view.tsx: ScoreRing now preserve-3d with the centred score at translateZ(28px) and wrapped in Tilt3D max 7 — ring tilts with pointer while the number floats above it in real 3D depth; input/setup card Rise3D; result blocks (score hero, breakdown, keywords, extracted requirements, match card) Rise3D staggered; all four suggestion cards Rise3D + Tilt3D max 3.5; empty-state icons Float3D.
+- app-shell.tsx: nav items translate-x-1 on hover/active with transition-all (CSS-only depth cue), active item shadow; user avatar now teal→emerald gradient with shadow.
+- Verification (agent-browser, real API flows): desktop 1440x900 — landing hero 3D intact after refactor; login shows Emerald & Antique Gold theme (feat-4 palette untouched) and real sign-in works; dashboard tilt VERIFIED via computed matrix3d on hovered stat card; builder step flip wrapper present after Next (Step 2 reached), preview tilt matrix3d confirmed on hover; analyzer full analysis ran (POST /api/ai/analyze 200) — ring tilt + centre translateZ confirmed, suggestion card tilt confirmed; job match full analysis ran (POST /api/ai/job-match 200) with extracted requirements rendering; My Resumes grid renders tilted cards; mobile 390x844 dashboard + register clean with zero horizontal overflow; register correctly blocks authed users (redirects to dashboard); remembered-email prefill still works on return to #/login; zero console/page errors; dev.log all 200s.
+- bunx eslint on all 7 touched files: clean. bunx tsc --noEmit: clean for app code.
+
+Stage Summary:
+- The 3D system now spans the entire project: landing (hero scene + tilt cards), auth (scene/tilt/flip/seal), dashboard (tilt stats + quick actions + resume cards), builder (3D step flips + tilting live preview), analyzer/job-match (3D score rings with floating numbers + staggered result rises), app shell (nav depth cues). One shared primitives module (three-d/motion.tsx) keeps it consistent, and every effect degrades gracefully under prefers-reduced-motion. No logic, routing, API or accessibility behaviour changed.

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { AppShell } from '@/components/app/app-shell';
 import { LoadingButton } from '@/components/app/loading-button';
+import { Float3D, Rise3D, Tilt3D } from '@/components/app/three-d/motion';
 import { apiFetch } from '@/lib/client/api';
 import { navigate } from '@/lib/client/navigation';
 import { useResumesStore, type ResumeSummary } from '@/stores/resumes-store';
@@ -46,7 +47,7 @@ function ScoreRing({ score, caption }: { score: number; caption: string }) {
   const clamped = Math.max(0, Math.min(100, Math.round(score)));
   const tone = scoreTone(clamped);
   return (
-    <div className="relative h-40 w-40 shrink-0 sm:h-44 sm:w-44">
+    <div className="relative h-40 w-40 shrink-0 sm:h-44 sm:w-44" style={{ transformStyle: 'preserve-3d' }}>
       <svg
         viewBox="0 0 120 120"
         className="h-full w-full -rotate-90"
@@ -66,7 +67,7 @@ function ScoreRing({ score, caption }: { score: number; caption: string }) {
           strokeDashoffset={circumference * (1 - clamped / 100)}
         />
       </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
+      <div className="absolute inset-0 flex flex-col items-center justify-center [transform:translateZ(28px)]">
         <span className={cn('text-4xl font-bold tabular-nums sm:text-5xl', tone.text)}>{clamped}</span>
         <span className="text-xs text-muted-foreground">/ 100</span>
       </div>
@@ -179,12 +180,14 @@ export function AnalyzerView({ preselectedId }: { preselectedId?: string }) {
           /* Empty state: no resumes yet */
           <Card className="border-dashed">
             <CardContent className="flex flex-col items-center gap-4 py-12 text-center">
-              <span
-                className="flex h-14 w-14 items-center justify-center rounded-full bg-teal-600/10 text-teal-700 dark:bg-teal-500/15 dark:text-teal-300"
-                aria-hidden
-              >
-                <FilePlus2 className="h-7 w-7" />
-              </span>
+              <Float3D duration={5}>
+                <span
+                  className="flex h-14 w-14 items-center justify-center rounded-full bg-teal-600/10 text-teal-700 shadow-lg shadow-teal-600/10 dark:bg-teal-500/15 dark:text-teal-300"
+                  aria-hidden
+                >
+                  <FilePlus2 className="h-7 w-7" />
+                </span>
+              </Float3D>
               <div className="space-y-1">
                 <h2 className="text-lg font-semibold">You haven&apos;t created a resume yet.</h2>
                 <p className="mx-auto max-w-sm text-sm text-muted-foreground">
@@ -199,6 +202,7 @@ export function AnalyzerView({ preselectedId }: { preselectedId?: string }) {
         ) : (
           <>
             {/* Setup card */}
+            <Rise3D>
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
@@ -260,14 +264,18 @@ export function AnalyzerView({ preselectedId }: { preselectedId?: string }) {
                 </div>
               </CardContent>
             </Card>
+            </Rise3D>
 
             {analysis ? (
               /* ── Results ── */
               <div className="space-y-6" aria-live="polite">
                 {/* 1. Score hero */}
+                <Rise3D distance={20} tilt={6}>
                 <Card className="overflow-hidden border-teal-600/20">
                   <CardContent className="flex flex-col items-center gap-6 py-6 sm:flex-row sm:gap-8">
-                    <ScoreRing score={analysis.score} caption="AI Estimated ATS Score" />
+                    <Tilt3D max={7}>
+                      <ScoreRing score={analysis.score} caption="AI Estimated ATS Score" />
+                    </Tilt3D>
                     <div className="min-w-0 flex-1 space-y-3 text-center sm:text-left">
                       <div className="flex items-center justify-center gap-1.5 sm:justify-start">
                         <h2 className="text-lg font-semibold">AI Estimated ATS Score</h2>
@@ -296,8 +304,10 @@ export function AnalyzerView({ preselectedId }: { preselectedId?: string }) {
                     </div>
                   </CardContent>
                 </Card>
+                </Rise3D>
 
                 {/* 2. Score breakdown */}
+                <Rise3D delay={0.06}>
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-base">Score breakdown</CardTitle>
@@ -322,8 +332,10 @@ export function AnalyzerView({ preselectedId }: { preselectedId?: string }) {
                     ))}
                   </CardContent>
                 </Card>
+                </Rise3D>
 
                 {/* 3. Keyword match */}
+                <Rise3D delay={0.1}>
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-base">Keyword match</CardTitle>
@@ -362,49 +374,68 @@ export function AnalyzerView({ preselectedId }: { preselectedId?: string }) {
                     </div>
                   </CardContent>
                 </Card>
+                </Rise3D>
 
                 {/* 4. Suggestion cards */}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <SuggestionListCard
-                    title="Strengths"
-                    icon={<CheckCircle2 className="h-4 w-4" aria-hidden />}
-                    iconClass="text-emerald-600 dark:text-emerald-400"
-                    items={analysis.strengths}
-                    emptyText="No specific strengths were identified yet."
-                  />
-                  <SuggestionListCard
-                    title="Improvement Suggestions"
-                    icon={<TrendingUp className="h-4 w-4" aria-hidden />}
-                    iconClass="text-amber-600 dark:text-amber-400"
-                    items={analysis.improvements}
-                    emptyText="No improvements suggested — nice work."
-                  />
-                  <SuggestionListCard
-                    title="Formatting Suggestions"
-                    icon={<LayoutTemplate className="h-4 w-4" aria-hidden />}
-                    iconClass="text-teal-600 dark:text-teal-400"
-                    items={analysis.formatting}
-                    emptyText="No formatting changes suggested."
-                  />
-                  <SuggestionListCard
-                    title="Job-specific Recommendations"
-                    icon={<Target className="h-4 w-4" aria-hidden />}
-                    iconClass="text-violet-600 dark:text-violet-400"
-                    items={analysis.recommendations}
-                    emptyText="No role-specific recommendations for this resume yet."
-                  />
+                  <Rise3D delay={0.12} className="h-full">
+                    <Tilt3D className="h-full" max={3.5}>
+                      <SuggestionListCard
+                        title="Strengths"
+                        icon={<CheckCircle2 className="h-4 w-4" aria-hidden />}
+                        iconClass="text-emerald-600 dark:text-emerald-400"
+                        items={analysis.strengths}
+                        emptyText="No specific strengths were identified yet."
+                      />
+                    </Tilt3D>
+                  </Rise3D>
+                  <Rise3D delay={0.16} className="h-full">
+                    <Tilt3D className="h-full" max={3.5}>
+                      <SuggestionListCard
+                        title="Improvement Suggestions"
+                        icon={<TrendingUp className="h-4 w-4" aria-hidden />}
+                        iconClass="text-amber-600 dark:text-amber-400"
+                        items={analysis.improvements}
+                        emptyText="No improvements suggested — nice work."
+                      />
+                    </Tilt3D>
+                  </Rise3D>
+                  <Rise3D delay={0.2} className="h-full">
+                    <Tilt3D className="h-full" max={3.5}>
+                      <SuggestionListCard
+                        title="Formatting Suggestions"
+                        icon={<LayoutTemplate className="h-4 w-4" aria-hidden />}
+                        iconClass="text-teal-600 dark:text-teal-400"
+                        items={analysis.formatting}
+                        emptyText="No formatting changes suggested."
+                      />
+                    </Tilt3D>
+                  </Rise3D>
+                  <Rise3D delay={0.24} className="h-full">
+                    <Tilt3D className="h-full" max={3.5}>
+                      <SuggestionListCard
+                        title="Job-specific Recommendations"
+                        icon={<Target className="h-4 w-4" aria-hidden />}
+                        iconClass="text-violet-600 dark:text-violet-400"
+                        items={analysis.recommendations}
+                        emptyText="No role-specific recommendations for this resume yet."
+                      />
+                    </Tilt3D>
+                  </Rise3D>
                 </div>
               </div>
             ) : (
               /* Empty state: no analysis yet */
               <Card className="border-dashed">
                 <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
-                  <span
-                    className="flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground"
-                    aria-hidden
-                  >
-                    <FileText className="h-7 w-7" />
-                  </span>
+                  <Float3D duration={5} wobble={3}>
+                    <span
+                      className="flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground"
+                      aria-hidden
+                    >
+                      <FileText className="h-7 w-7" />
+                    </span>
+                  </Float3D>
                   <p className="max-w-md text-sm text-muted-foreground">
                     Run an analysis to see your ATS score, keyword matches and suggestions.
                   </p>

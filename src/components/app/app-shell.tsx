@@ -60,10 +60,10 @@ function NavItems({ active, onNavigate }: { active: ShellActive; onNavigate?: ()
             }}
             aria-current={active === item.key ? 'page' : undefined}
             className={cn(
-              'flex min-h-[44px] w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+              'flex min-h-[44px] w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
               active === item.key
-                ? 'bg-teal-50 text-teal-800 dark:bg-teal-950/60 dark:text-teal-200'
-                : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                ? 'translate-x-1 bg-teal-50 text-teal-800 shadow-sm shadow-teal-600/10 dark:bg-teal-950/60 dark:text-teal-200'
+                : 'text-muted-foreground hover:translate-x-1 hover:bg-muted hover:text-foreground',
             )}
           >
             <Icon className="h-4 w-4 shrink-0" aria-hidden />
@@ -81,7 +81,7 @@ function UserCard() {
   return (
     <div className="rounded-xl border bg-card p-3">
       <div className="flex items-center gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-teal-600 text-sm font-semibold text-white" aria-hidden>
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-emerald-600 text-sm font-semibold text-white shadow-md shadow-teal-600/25" aria-hidden>
           {(user?.name ?? 'U').slice(0, 1).toUpperCase()}
         </span>
         <div className="min-w-0 flex-1">

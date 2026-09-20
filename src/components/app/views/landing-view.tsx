@@ -1,7 +1,7 @@
 'use client';
 
 import type { MouseEvent, ReactNode } from 'react';
-import { motion, useMotionValue, useReducedMotion, useSpring } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   ArrowRight,
   BriefcaseBusiness,
@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Logo } from '@/components/app/logo';
 import { HeroScene } from '@/components/app/landing/hero-scene';
+import { Tilt3D } from '@/components/app/three-d/motion';
 import { navigate } from '@/lib/client/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -118,40 +119,6 @@ function FadeUp({ children, className, delay = 0 }: { children: ReactNode; class
     >
       {children}
     </motion.div>
-  );
-}
-
-/** Pointer-tracking 3D tilt wrapper (disabled for reduced motion). */
-function Tilt3D({ children, className, max = 6 }: { children: ReactNode; className?: string; max?: number }) {
-  const reduced = useReducedMotion();
-  const rawX = useMotionValue(0);
-  const rawY = useMotionValue(0);
-  const rotateX = useSpring(rawX, { stiffness: 150, damping: 18 });
-  const rotateY = useSpring(rawY, { stiffness: 150, damping: 18 });
-
-  function onMove(event: MouseEvent<HTMLDivElement>) {
-    if (reduced) return;
-    const rect = event.currentTarget.getBoundingClientRect();
-    rawY.set(((event.clientX - rect.left) / rect.width - 0.5) * max);
-    rawX.set(-((event.clientY - rect.top) / rect.height - 0.5) * max);
-  }
-
-  function onLeave() {
-    rawX.set(0);
-    rawY.set(0);
-  }
-
-  return (
-    <div className={'[perspective:1200px] ' + (className ?? '')}>
-      <motion.div
-        className="h-full"
-        style={reduced ? undefined : { rotateX, rotateY, transformStyle: 'preserve-3d' }}
-        onMouseMove={onMove}
-        onMouseLeave={onLeave}
-      >
-        {children}
-      </motion.div>
-    </div>
   );
 }
 
