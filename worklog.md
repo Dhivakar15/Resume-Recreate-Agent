@@ -95,3 +95,17 @@ Work Log:
 Stage Summary:
 - Root cause: cookie-only sessions break in the embedded preview iframe (third-party cookies blocked). Sessions now work over httpOnly cookie OR Authorization Bearer header, so auth is environment-independent (localhost, Vercel production, and preview iframes).
 - No data-model, route-structure or UI changes; fully backwards compatible with existing accounts (cookie-only sessions keep working).
+
+---
+Task ID: feat-2
+Agent: main (Z.ai Code)
+Task: Redesign login/register page — 3D effects + classical colour theme
+
+Work Log:
+- Created src/components/app/auth/auth-scene.tsx: full-viewport decorative 3D backdrop ("Burgundy & Antique Gold"): deep wine gradients + diamond lattice + ornamental rings + oversized serif monogram; three rotating 3D glass cubes (preserve-3d, 6 gold-framed faces with resume icons, different sizes/speeds); two floating 3D resume sheets with skeleton lines; 14 gold-dust particles (deterministic array — hydration-safe); window-level pointer parallax with springs across 3 depth layers; prefers-reduced-motion disables all loops/parallax; aria-hidden + pointer-events-none.
+- Rewrote src/components/app/views/auth-view.tsx keeping 100% of the previous logic (validation, COPY, submit handlers, aria wiring, show/hide password, toast): new presentation — lg split layout with classical brand showcase (gold lockup, serif headline with gold-gradient italic "elegance", 3 feature rows, quote, ornamental corner frames) and a dark-glass form card (bg #23060d/85 + backdrop-blur + gold border + gold hairline) that tilts in 3D following the pointer (±6° springs, resets on leave); login↔register switch is a 3D flip (AnimatePresence mode="wait", rotateY ±70°, perspective 1600px); burgundy-gradient submit button with gold border + hover lift; theme-proof explicit colours (works in light AND dark mode since the scene defines its own palette); min-h-[520px] card keeps flip height stable.
+- Fixed during visual QA: gold gradient text rendered as solid block (background shorthand reset background-clip → switched to bg-gradient-to-br + bg-clip-text); big cube overlapped headline → moved to top-left corner + softened face opacity.
+- Verified with agent-browser: desktop 1440x900 login + register (scene, cubes, sheets, dust, monogram, corner frames all render); 3D flip between modes works; client validation (short password → red invalid border + "Password must be at least 8 characters."); wrong-password API error renders themed destructive alert + sonner toast; real register → dashboard ("Welcome back, Victoria"); logout → login success path; mobile 390x844 login + register render beautifully with zero horizontal overflow; lint clean; tsc clean (app code); dev.log healthy (only intentional 401 from wrong-password test).
+
+Stage Summary:
+- Auth pages now have a distinctive "Burgundy & Antique Gold" classical identity with genuine 3D interactions (parallax scene, rotating cubes, card tilt, mode flip) — fully accessible (aria-hidden decoration, reduced-motion support, unchanged form a11y), responsive, and theme-proof. All existing auth behaviour and the hybrid cookie/Bearer session from fix-1 are untouched.
