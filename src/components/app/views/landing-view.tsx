@@ -1,7 +1,7 @@
 'use client';
 
 import type { MouseEvent, ReactNode } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useMotionValue, useReducedMotion, useSpring } from 'framer-motion';
 import {
   ArrowRight,
   BriefcaseBusiness,
@@ -16,6 +16,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { Logo } from '@/components/app/logo';
+import { HeroScene } from '@/components/app/landing/hero-scene';
 import { navigate } from '@/lib/client/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -120,12 +121,46 @@ function FadeUp({ children, className, delay = 0 }: { children: ReactNode; class
   );
 }
 
-/** Slow vertical float for the hero mockup badges. */
+/** Pointer-tracking 3D tilt wrapper (disabled for reduced motion). */
+function Tilt3D({ children, className, max = 6 }: { children: ReactNode; className?: string; max?: number }) {
+  const reduced = useReducedMotion();
+  const rawX = useMotionValue(0);
+  const rawY = useMotionValue(0);
+  const rotateX = useSpring(rawX, { stiffness: 150, damping: 18 });
+  const rotateY = useSpring(rawY, { stiffness: 150, damping: 18 });
+
+  function onMove(event: MouseEvent<HTMLDivElement>) {
+    if (reduced) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    rawY.set(((event.clientX - rect.left) / rect.width - 0.5) * max);
+    rawX.set(-((event.clientY - rect.top) / rect.height - 0.5) * max);
+  }
+
+  function onLeave() {
+    rawX.set(0);
+    rawY.set(0);
+  }
+
+  return (
+    <div className={'[perspective:1200px] ' + (className ?? '')}>
+      <motion.div
+        className="h-full"
+        style={reduced ? undefined : { rotateX, rotateY, transformStyle: 'preserve-3d' }}
+        onMouseMove={onMove}
+        onMouseLeave={onLeave}
+      >
+        {children}
+      </motion.div>
+    </div>
+  );
+}
+
+/** Slow vertical float + gentle 3D wobble for the hero mockup badges. */
 function FloatBadge({ children, className, delay = 0, duration = 5 }: { children: ReactNode; className?: string; delay?: number; duration?: number }) {
   return (
     <motion.div
       className={className}
-      animate={{ y: [0, -8, 0] }}
+      animate={{ y: [0, -8, 0], rotate: [-1.5, 1.5, -1.5] }}
       transition={{ duration, repeat: Infinity, ease: 'easeInOut', delay }}
     >
       {children}
@@ -250,6 +285,9 @@ export function LandingView() {
           <div className="pointer-events-none absolute -top-24 -right-24 h-72 w-72 rounded-full bg-teal-400/20 blur-3xl dark:bg-teal-500/10" aria-hidden />
           <div className="pointer-events-none absolute -bottom-32 -left-24 h-72 w-72 rounded-full bg-emerald-400/20 blur-3xl dark:bg-emerald-500/10" aria-hidden />
 
+          {/* Floating 3D glass cubes, resume sheets and gold dust */}
+          <HeroScene />
+
           <div className="relative mx-auto grid w-full max-w-6xl items-center gap-12 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-8 lg:py-24">
             <FadeUp>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-teal-200 bg-teal-100/80 px-3 py-1 text-xs font-medium text-teal-800 dark:border-teal-800 dark:bg-teal-900/40 dark:text-teal-200">
@@ -292,7 +330,9 @@ export function LandingView() {
             </FadeUp>
 
             <FadeUp delay={0.15}>
-              <ResumePaperMockup />
+              <Tilt3D max={8}>
+                <ResumePaperMockup />
+              </Tilt3D>
             </FadeUp>
           </div>
         </section>
@@ -313,19 +353,21 @@ export function LandingView() {
             <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {FEATURES.map((feature, index) => (
                 <FadeUp key={feature.title} delay={index * 0.05} className="h-full">
-                  <Card className="h-full transition-shadow hover:shadow-md">
-                    <CardHeader>
-                      <div className="flex size-11 items-center justify-center rounded-lg bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300">
-                        <feature.icon className="size-5" aria-hidden />
-                      </div>
-                      <CardTitle className="text-base">{feature.title}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <CardDescription className="leading-relaxed">
-                        {feature.description}
-                      </CardDescription>
-                    </CardContent>
-                  </Card>
+                  <Tilt3D className="h-full" max={5}>
+                    <Card className="h-full transition-shadow hover:shadow-md">
+                      <CardHeader>
+                        <div className="flex size-11 items-center justify-center rounded-lg bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300">
+                          <feature.icon className="size-5" aria-hidden />
+                        </div>
+                        <CardTitle className="text-base">{feature.title}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <CardDescription className="leading-relaxed">
+                          {feature.description}
+                        </CardDescription>
+                      </CardContent>
+                    </Card>
+                  </Tilt3D>
                 </FadeUp>
               ))}
             </div>

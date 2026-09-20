@@ -124,3 +124,18 @@ Work Log:
 
 Stage Summary:
 - The sign-in page is now a designed destination of its own within the classical 3D theme: golden key wax-seal emblem in the scene, returning-guest showcase copy, key chip on the card, and a real remembered-email welcome-back prefill. Register keeps its "new chapter" identity. All auth logic, validation, accessibility and the hybrid cookie/Bearer session (fix-1) remain untouched; both pages share one resilient AuthView.
+
+---
+Task ID: feat-4
+Agent: main (Z.ai Code)
+Task: Landing page 3D effects + auth pages recolored (user disliked burgundy)
+
+Work Log:
+- Recolor (login + register, user: "colour can be change other colour i dont like that colour"): swapped the entire "Burgundy & Antique Gold" palette to "Emerald & Antique Gold" across auth-scene.tsx and auth-view.tsx — deep emerald base gradient (#0a2416/#04120b/#081f12) with emerald corner glows (#124a2e/#0b3520), emerald cube faces (#0f3d26/30), card bg #06170f/85, wrapper #04120b, brand lockup + key chip + wax seal discs now emerald gradients, submit button gradient from-#157347 to-#0d5030 (hover #1a8a55/#11633c), vignette rgba(3,12,8,.6). All antique-gold accents (#d4a548/#e9c876/#f1dc9a), cream text (#f4e9d4/#c9b58f) and every interaction (tilt, flip, seal) unchanged. Burgundy hexes fully removed from src (grep-verified).
+- Landing page 3D (user: "home page also a 3D effects"): new src/components/app/landing/hero-scene.tsx — light-theme sibling of the auth scene mounted inside the hero section (aria-hidden, pointer-events-none, deterministic/hydration-safe): three rotating 3D glass cubes (white/emerald glass faces + resume icons, 88/56/40px, hidden below md/sm/lg), two floating 3D resume sheets (white glass, skeleton lines), 10 gold-dust particles, window-pointer parallax across 3 depth layers, prefers-reduced-motion disables all loops.
+- landing-view.tsx: added Tilt3D reusable pointer-tilt wrapper (perspective 1200px, springs, max ±N°, reduced-motion safe; fixed a useSpring(ry) undefined-variable bug before first run) — applied to the hero resume-paper mockup (max 8°) and all six feature cards (max 5°, h-full chain preserved); FloatBadge badges now wobble rotate [-1.5°,1.5°] while floating; HeroScene rendered behind hero grid (grid keeps relative stacking). Landing palette untouched (teal/emerald, user only asked for 3D); gold dust ties it to the auth theme.
+- Verified with agent-browser: landing hero 1440x900 shows cubes/sheets/dust correctly placed with no text collisions; features grid renders all 6 cards (first screenshot mid-fade was just whileInView animations in flight — confirmed by re-shot after settle); tilt verified via computed matrix3d (hovered card ≈2° at probe point, others "none", hero cubes rotating — matrix3d rotation components present); recolored login + register desktop both correct (emerald scene, seal on login only, no chip on register); mobile 390x844 landing + login clean, no horizontal overflow; real sign-in carol-no-cookie@example.com → dashboard works post-recolor; zero console/page errors.
+- bun run-scoped eslint on all 4 touched files: clean. bunx tsc --noEmit: clean for app files. dev.log healthy.
+
+Stage Summary:
+- The app now has one coherent visual system: light teal/emerald landing with genuine 3D hero (tilting mockup, glass cubes, floating sheets, gold dust, tilt cards) flowing into the dark "Emerald & Antique Gold" classical auth experience. No logic, routing, API or accessibility behaviour changed anywhere.
