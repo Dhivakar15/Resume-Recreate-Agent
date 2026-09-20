@@ -4,12 +4,14 @@
  * Login / Register view — "Burgundy & Antique Gold" classical edition.
  * A dark, ornamental 3D scene (see auth-scene.tsx) behind a glass form card
  * that tilts with the pointer and flips in 3D when switching modes.
+ * The sign-in page gets its own identity: a dedicated wax-seal emblem in the
+ * scene, a returning-guest showcase panel and a remembered-email welcome.
  * All form logic, validation and accessibility wiring is unchanged.
  */
 
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { AnimatePresence, motion, useMotionValue, useSpring, useReducedMotion } from 'framer-motion';
-import { AlertCircle, ArrowLeft, Eye, EyeOff, FileText, FileDown, Gauge, Wand2 } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Eye, EyeOff, FileDown, FileText, Gauge, KeyRound, Sparkles, Wand2, type LucideIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { AuthScene } from '@/components/app/auth/auth-scene';
 import { LoadingButton } from '@/components/app/loading-button';
@@ -32,6 +34,9 @@ interface FieldErrors {
 }
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** localStorage key for the last successfully signed-in email (welcome-back prefill). */
+const LAST_EMAIL_KEY = 'rra_last_email';
 
 const COPY = {
   login: {
@@ -56,23 +61,71 @@ const COPY = {
   },
 } as const;
 
-const FEATURES = [
-  {
-    icon: Wand2,
-    title: 'AI polish, fact-safe',
-    text: 'Every bullet point refined — never invented.',
+/** Mode-aware copy for the desktop showcase panel beside the form. */
+const SHOWCASE = {
+  login: {
+    overline: 'The Studio Awaits Your Return',
+    headingA: 'Good to see you',
+    headingEm: 'again',
+    headingB: '.',
+    subtext:
+      'Your resumes, scores and role matches are exactly where you left them — step back in and pick up the thread in minutes.',
+    quote: '“Every great story deserves a second draft.”',
   },
-  {
-    icon: Gauge,
-    title: 'AI Estimated ATS Score',
-    text: 'See how robot recruiters read your resume.',
+  register: {
+    overline: 'Your Next Chapter Begins',
+    headingA: 'Where timeless',
+    headingEm: 'elegance',
+    headingB: ' meets your career.',
+    subtext:
+      'Create your account to polish every bullet with AI, score your ATS readiness and match yourself to the roles you deserve — all in one refined studio.',
+    quote: '“First impressions, beautifully engineered.”',
   },
-  {
-    icon: FileDown,
-    title: 'PDF & LaTeX exports',
-    text: 'Print-ready files with classical typography.',
-  },
-] as const;
+} as const;
+
+interface Feature {
+  icon: LucideIcon;
+  title: string;
+  text: string;
+}
+
+/** Returning guests and newcomers hear a different pitch. */
+const FEATURES: Record<'login' | 'register', Feature[]> = {
+  login: [
+    {
+      icon: KeyRound,
+      title: 'Everything awaits',
+      text: 'Resumes, versions and analyses — preserved exactly as you left them.',
+    },
+    {
+      icon: Gauge,
+      title: 'Revisit your ATS standing',
+      text: 'Re-check your AI Estimated ATS Score whenever you like.',
+    },
+    {
+      icon: FileDown,
+      title: 'Re-export in seconds',
+      text: 'Fresh PDF & LaTeX files, whenever you need them.',
+    },
+  ],
+  register: [
+    {
+      icon: Wand2,
+      title: 'AI polish, fact-safe',
+      text: 'Every bullet point refined — never invented.',
+    },
+    {
+      icon: Gauge,
+      title: 'AI Estimated ATS Score',
+      text: 'See how robot recruiters read your resume.',
+    },
+    {
+      icon: FileDown,
+      title: 'PDF & LaTeX exports',
+      text: 'Print-ready files with classical typography.',
+    },
+  ],
+};
 
 /** Gold-accented brand lockup for the classical scene. */
 function BrandLockup() {
@@ -112,16 +165,36 @@ export function AuthView({ mode }: AuthViewProps) {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [apiError, setApiError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [rememberedEmail, setRememberedEmail] = useState<string | null>(null);
+
+  // Ref mirror of `email` so the mode effect below can read it without re-running.
+  const emailRef = useRef('');
+  useEffect(() => {
+    emailRef.current = email;
+  }, [email]);
 
   const isRegister = mode === 'register';
   const copy = COPY[mode];
+  const showcase = SHOWCASE[mode];
 
-  // Reset transient state when switching between login and register.
+  // Reset transient state when switching between login and register, and
+  // offer the remembered email when the guest returns to the sign-in page.
   useEffect(() => {
     setApiError(null);
     setErrors({});
     setShowPassword(false);
     setSubmitting(false);
+    if (mode === 'login' && emailRef.current.trim() === '') {
+      try {
+        const saved = window.localStorage.getItem(LAST_EMAIL_KEY);
+        if (saved) {
+          setEmail(saved);
+          setRememberedEmail(saved);
+        }
+      } catch {
+        // Storage unavailable — the form simply stays empty.
+      }
+    }
   }, [mode]);
 
   // 3D tilt on the form card (pointer only; disabled for reduced motion).
@@ -189,6 +262,12 @@ export function AuthView({ mode }: AuthViewProps) {
         await register(name.trim(), email.trim(), password);
       } else {
         await login(email.trim(), password);
+        // Remember the email for a warmer welcome next time (best effort).
+        try {
+          window.localStorage.setItem(LAST_EMAIL_KEY, email.trim());
+        } catch {
+          // Storage unavailable — signing in still works.
+        }
       }
       navigate('dashboard');
     } catch (error) {
@@ -206,7 +285,7 @@ export function AuthView({ mode }: AuthViewProps) {
 
   return (
     <div className="relative min-h-screen overflow-x-clip bg-[#1a0509]">
-      <AuthScene />
+      <AuthScene mode={mode} />
 
       <div className="relative z-10 grid min-h-screen lg:grid-cols-2">
         {/* ── Left: classical brand showcase (desktop) ─────────────────── */}
@@ -224,22 +303,19 @@ export function AuthView({ mode }: AuthViewProps) {
             <BrandLockup />
 
             <p className="mt-10 text-[11px] font-medium uppercase tracking-[0.35em] text-[#d4a548]">
-              {copy.overline}
+              {showcase.overline}
             </p>
-            <h1 className="mt-4 font-serif text-5xl font-bold leading-[1.08] tracking-tight text-[#f4e9d4]">
-              Where timeless{' '}
+            <h1 className="mt-4 min-h-[10rem] font-serif text-5xl font-bold leading-[1.08] tracking-tight text-[#f4e9d4]">
+              {showcase.headingA}{' '}
               <span className="bg-gradient-to-br from-[#f1dc9a] via-[#d4a548] to-[#a87c2e] bg-clip-text italic text-transparent">
-                elegance
-              </span>{' '}
-              meets your career.
+                {showcase.headingEm}
+              </span>
+              {showcase.headingB}
             </h1>
-            <p className="mt-5 leading-relaxed text-[#c9b58f]">
-              Sign in to polish every bullet with AI, score your ATS readiness and match
-              yourself to the roles you deserve — all in one refined studio.
-            </p>
+            <p className="mt-5 leading-relaxed text-[#c9b58f]">{showcase.subtext}</p>
 
             <ul className="mt-10 space-y-5">
-              {FEATURES.map((feature) => (
+              {FEATURES[mode].map((feature) => (
                 <li key={feature.title} className="flex items-start gap-4">
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#d4a548]/35 bg-white/[0.03]">
                     <feature.icon className="h-5 w-5 text-[#e9c876]" aria-hidden />
@@ -254,9 +330,7 @@ export function AuthView({ mode }: AuthViewProps) {
 
             <OrnamentDivider />
 
-            <p className="mt-6 font-serif text-lg italic text-[#c9b58f]">
-              “First impressions, beautifully engineered.”
-            </p>
+            <p className="mt-6 font-serif text-lg italic text-[#c9b58f]">{showcase.quote}</p>
           </div>
         </aside>
 
@@ -286,6 +360,14 @@ export function AuthView({ mode }: AuthViewProps) {
                       <div className="lg:hidden">
                         <BrandLockup />
                       </div>
+                      {!isRegister && (
+                        <span
+                          className="flex h-12 w-12 items-center justify-center rounded-full border border-[#d4a548]/40 bg-gradient-to-br from-[#5c1220]/70 to-[#2b0a12]/70 shadow-[inset_0_0_20px_rgba(212,165,72,0.15)]"
+                          aria-hidden
+                        >
+                          <KeyRound className="h-6 w-6 text-[#e9c876]" strokeWidth={1.75} />
+                        </span>
+                      )}
                       <p className="mt-2 text-[11px] font-medium uppercase tracking-[0.35em] text-[#d4a548]">
                         {copy.overline}
                       </p>
@@ -363,6 +445,12 @@ export function AuthView({ mode }: AuthViewProps) {
                           {errors.email && (
                             <p id="email-error" className="text-sm text-red-300/90">
                               {errors.email}
+                            </p>
+                          )}
+                          {mode === 'login' && rememberedEmail && email === rememberedEmail && !errors.email && (
+                            <p className="flex items-center gap-1.5 text-xs text-[#d4a548]/85">
+                              <Sparkles className="h-3 w-3 shrink-0" aria-hidden />
+                              Welcome back — we kept your email handy.
                             </p>
                           )}
                         </div>

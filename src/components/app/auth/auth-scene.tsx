@@ -4,8 +4,9 @@
  * Decorative 3D backdrop for the auth pages — "Burgundy & Antique Gold" scene.
  * Purely presentational (aria-hidden, pointer-events-none): a rotating
  * gold-framed glass cube, floating resume sheets, gold dust and a parallax
- * layer system driven by the pointer. All animation is skipped when the user
- * prefers reduced motion.
+ * layer system driven by the pointer. When `mode` is "login" a golden 3D
+ * wax-seal medallion (the sign-in emblem) drifts in the scene as well.
+ * All animation is skipped when the user prefers reduced motion.
  */
 
 import { useEffect } from 'react';
@@ -21,6 +22,7 @@ import {
   Award,
   BriefcaseBusiness,
   FileText,
+  KeyRound,
   PenLine,
   Sparkles,
   Target,
@@ -137,8 +139,57 @@ function FloatingSheet({ className, depth, delay = 0, parallaxX, parallaxY }: Sh
   );
 }
 
+/**
+ * A gently swaying 3D medallion — the golden "wax seal" of the sign-in page.
+ * Sways on the Y axis inside a perspective wrapper so the elliptical rim and
+ * the embossed key read as true 3D rotation.
+ */
+function FloatingSeal({
+  className,
+  animate,
+  delay = 0,
+  parallaxX,
+  parallaxY,
+}: {
+  className?: string;
+  animate: boolean;
+  delay?: number;
+  parallaxX?: MotionValue<number>;
+  parallaxY?: MotionValue<number>;
+}) {
+  return (
+    <motion.div
+      className={'pointer-events-none absolute ' + (className ?? '')}
+      style={parallaxX && parallaxY ? { x: parallaxX, y: parallaxY } : undefined}
+      aria-hidden
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.9, delay: 0.25, ease: 'easeOut' }}
+    >
+      <motion.div
+        className="[perspective:640px]"
+        animate={animate ? { y: [0, -10, 0] } : undefined}
+        transition={{ repeat: Infinity, duration: 7, delay, ease: 'easeInOut' }}
+      >
+        <motion.div
+          className="relative flex h-24 w-24 items-center justify-center"
+          style={{ transformStyle: 'preserve-3d' }}
+          animate={animate ? { rotateY: [-24, 24, -24] } : undefined}
+          transition={{ repeat: Infinity, duration: 10, delay, ease: 'easeInOut' }}
+        >
+          <span className="absolute -inset-6 rounded-full bg-[#d4a548]/10 blur-2xl" />
+          <span className="relative flex h-24 w-24 items-center justify-center rounded-full border-2 border-[#d4a548]/45 bg-gradient-to-br from-[#5c1220]/70 to-[#2b0a12]/70 shadow-[0_30px_60px_-20px_rgba(0,0,0,0.85),inset_0_0_30px_rgba(212,165,72,0.12)] backdrop-blur-[3px]">
+            <span className="absolute inset-2 rounded-full border border-[#d4a548]/30" />
+            <KeyRound className="h-9 w-9 text-[#e9c876]" strokeWidth={1.5} />
+          </span>
+        </motion.div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 /** Full-viewport classical scene. Render behind the auth forms. */
-export function AuthScene() {
+export function AuthScene({ mode = 'login' }: { mode?: 'login' | 'register' }) {
   const reduced = useReducedMotion();
 
   // Pointer parallax (window-level so it also works while hovering the card).
@@ -241,8 +292,19 @@ export function AuthScene() {
         parallaxX={reduced ? undefined : sheetX}
         parallaxY={reduced ? undefined : sheetY}
       />
+
+      {/* Sign-in wax seal — the emblem of the dedicated sign-in page */}
+      {mode === 'login' && (
+        <FloatingSeal
+          className="bottom-[9%] left-[42%] hidden xl:block"
+          animate={!reduced}
+          delay={0.8}
+          parallaxX={reduced ? undefined : sheetX}
+          parallaxY={reduced ? undefined : sheetY}
+        />
+      )}
       <FloatingSheet
-        className="bottom-[16%] left-[8%] hidden xl:block"
+        className="left-[44%] top-[6%] hidden xl:block"
         depth={18}
         delay={1.6}
         parallaxX={reduced ? undefined : sheetX}
