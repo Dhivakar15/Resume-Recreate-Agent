@@ -194,3 +194,20 @@ Work Log:
 
 Stage Summary:
 - Green is fully gone from the themed surfaces: landing, login, register, logo, app shell chrome and dashboard accents now share one coherent "Royal Amethyst & Champagne" classical identity (light ivory landing + dark amethyst auth). 3D effects, all logic, routing, auth and accessibility untouched. Analyzer/job-match success-semantics green (matched skills / high scores) deliberately preserved as universal UX feedback colours.
+---
+Task ID: feat-7
+Agent: main (Z.ai Code)
+Task: Complete landing page redesign — premium dark glassmorphism + 3D futuristic "AI SaaS" hero per detailed spec
+
+Work Log:
+- Rewrote src/components/app/landing/hero-scene.tsx as "The Rebuild Chamber": a floating 3D glass resume document (profile AM avatar + Alex Morgan + Senior Product Manager, contact row, AI-Optimized pill, animated ATS score ring 98, skills chips +3 keywords, experience ×2 +2 bullets, education, projects AI polished, certifications) inside corner-bracket scanning frame; AI scan beam sweeps top→bottom; floating glass data cards (ATS Score ring, Keyword Match 24/30, AI Rewriting… with typing dots + looping progress bar) tethered by dashed connectors; status chips (Analyzing with ping dot, Optimized); 12-particle deterministic glow field on a deep translateZ layer; window-level pointer parallax springs drive tilt (rotateY −15…−3, rotateX 9…1) around a resting 3D pose; floor reflection + violet/fuchsia/cyan ambient glow; everything aria-hidden/decorative and fully static under prefers-reduced-motion.
+- Rewrote src/components/app/views/landing-view.tsx as "Midnight Glass": always-dark bg #04050d (theme-independent), faint futuristic grid masked radial + aurora orbs; glass navbar (border-white/[0.06] + backdrop-blur-xl, Logo light); hero with exact requested copy — H1 "AI-Powered Resume Recreate Agent" (violet→fuchsia→cyan gradient + glow), exact subtitle, primary CTA "Create My Resume" (gradient glow button → #/register), secondary "Explore Features" (glass button → smooth-scroll #features), trust row; gradient stats strip (98% / 3× / 12k+ / 4.9/5); 6 glassmorphism feature cards with cycling violet/fuchsia/cyan icon chips + Tilt3D hover; "How it works" 4 steps with glowing glass number chips + gradient connector; benefits glass panel with cyan checks (no green); final CTA glass banner; footer (mt-auto sticky-bottom pattern) with light logo.
+- Reusable helpers extracted in landing-view: Overline, PrimaryCta, GlassCta, FadeUp, GLASS_CARD recipe; shadcn Button restyled via className overrides.
+- Fixed mobile overlap found in browser verification: floating ATS + Keyword Match data cards now hidden below sm (info duplicated on the document itself); chips kept for AI feel.
+- Verification (agent-browser): desktop 1440×900 hero/sections/footer screenshots OK; mobile 390×844 hero + full resume card OK after fix; Explore Features scrolls (y=1029, hash intact); Create My Resume → #/register renders; Sign in → real login carol-no-cookie@example.com → #/dashboard with real data (login regression pass); zero page errors, console clean (only HMR dev logs); dev.log clean; bunx eslint clean; bunx tsc clean for app src (only pre-existing errors in examples/ + skills/ folders).
+
+Stage Summary:
+- Landing page is now a premium dark glassmorphism AI-SaaS page communicating AI + Resume + Professional + Futuristic + 3D; auth pages (dark amethyst glass) harmonize with the new landing without changes; logo already violet — global brand unchanged and green-free.
+- New/rewritten artifacts: src/components/app/landing/hero-scene.tsx (3D glass resume centerpiece), src/components/app/views/landing-view.tsx (Midnight Glass page).
+- Design system notes for future tasks: glass = border-white/[0.07] + bg-white/[0.03-0.055] + backdrop-blur-xl + top sheen line; palette violet/fuchsia/cyan + amber accents on #04050d; hero copy strings are user-specified verbatim — do not reword.
+- Screenshots: /home/z/my-project/shots/feat7-*.png
