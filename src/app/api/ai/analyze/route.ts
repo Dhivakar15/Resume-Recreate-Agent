@@ -6,6 +6,7 @@ import { computeATSScore } from '@/lib/ats-score';
 import { resumeToText } from '@/lib/resume-utils';
 import { normalizeResumeData } from '@/types/resume';
 import { rateLimit } from '@/lib/rate-limit';
+import { logActivity } from '@/lib/activity';
 
 /**
  * POST /api/ai/analyze — ATS analysis of a resume against a target role.
@@ -48,6 +49,7 @@ export async function POST(req: Request) {
         },
       });
 
+      await logActivity(user.id, 'analysis', `ATS analysis for "${resume.title}": scored ${analysis.score}/100`);
       return ok({ analysis, analysisId: saved.id });
     } catch (e) {
       if (e instanceof AIError) {

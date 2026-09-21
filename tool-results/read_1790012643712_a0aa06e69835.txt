@@ -1,0 +1,798 @@
+     1→     1→'use client';
+     2→     2→
+     3→     3→import { useCallback, useEffect, useState } from 'react';
+     4→     4→import { toast } from 'sonner';
+     5→     5→import { AppShell } from '@/components/app/app-shell';
+     6→     6→import { useAuthStore } from '@/stores/auth-store';
+     7→     7→import { useResumesStore, type ResumeSummary } from '@/stores/resumes-store';
+     8→     8→import { navigate } from '@/lib/client/navigation';
+     9→     9→import { apiFetch, downloadFile } from '@/lib/client/api';
+    10→    10→import { NewResumeDialog } from '@/components/app/new-resume-dialog';
+    11→    11→import { ViewResumeDialog } from '@/components/app/view-resume-dialog';
+    12→    12→import { LoadingButton } from '@/components/app/loading-button';
+    13→    13→import { Float3D, Rise3D, Tilt3D } from '@/components/app/three-d/motion';
+    14→    14→import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+    15→    15→import { Button } from '@/components/ui/button';
+    16→    16→import { Badge } from '@/components/ui/badge';
+    17→    17→import { Input } from '@/components/ui/input';
+    18→    18→import { Label } from '@/components/ui/label';
+    19→    19→import { Progress } from '@/components/ui/progress';
+    20→    20→import {
+    21→    21→  DropdownMenu,
+    22→    22→  DropdownMenuContent,
+    23→    23→  DropdownMenuItem,
+    24→    24→  DropdownMenuSeparator,
+    25→    25→  DropdownMenuTrigger,
+    26→    26→} from '@/components/ui/dropdown-menu';
+    27→    27→import {
+    28→    28→  AlertDialog,
+    29→    29→  AlertDialogAction,
+    30→    30→  AlertDialogCancel,
+    31→    31→  AlertDialogContent,
+    32→    32→  AlertDialogDescription,
+    33→    33→  AlertDialogFooter,
+    34→    34→  AlertDialogHeader,
+    35→    35→  AlertDialogTitle,
+    36→    36→} from '@/components/ui/alert-dialog';
+    37→    37→import {
+    38→    38→  Dialog,
+    39→    39→  DialogContent,
+    40→    40→  DialogDescription,
+    41→    41→  DialogFooter,
+    42→    42→  DialogHeader,
+    43→    43→  DialogTitle,
+    44→    44→} from '@/components/ui/dialog';
+    45→    45→import { TEMPLATE_LABELS, type ResumeTemplate } from '@/types/resume';
+    46→    46→import type { DashboardSummary } from '@/types/ai-tools';
+    47→    47→import {
+    48→    48→  Plus,
+    49→    49→  MoreVertical,
+    50→    50→  Pencil,
+    51→    51→  Eye,
+    52→    52→  Copy,
+    53→    53→  Trash2,
+    54→    54→  Download,
+    55→    55→  Code2,
+    56→    56→  Files,
+    57→    57→  ScanSearch,
+    58→    58→  Sparkles,
+    59→    59→  History,
+    60→    60→  FileText,
+    61→    61→  FolderOpen,
+    62→    62→  FilePlus2,
+    63→    63→  Upload,
+    64→    64→  Wand2,
+    65→    65→  Gauge,
+    66→    66→  MailOpen,
+    67→    67→  Activity as ActivityIcon,
+    68→    68→  BriefcaseBusiness,
+    69→    69→  Lightbulb,
+    70→    70→  RefreshCw,
+    71→    71→  ArrowRight,
+    72→    72→  Target,
+    73→    73→  UserRound,
+    74→    74→  ListChecks,
+    75→    75→  TrendingUp,
+    76→    76→  TrendingDown,
+    77→    77→  Minus,
+    78→    78→} from 'lucide-react';
+    79→    79→import { cn } from '@/lib/utils';
+    80→    80→
+    81→    81→function timeAgo(iso: string): string {
+    82→    82→  const diff = Date.now() - new Date(iso).getTime();
+    83→    83→  const mins = Math.floor(diff / 60000);
+    84→    84→  if (mins < 1) return 'just now';
+    85→    85→  if (mins < 60) return `${mins}m ago`;
+    86→    86→  const hours = Math.floor(mins / 60);
+    87→    87→  if (hours < 24) return `${hours}h ago`;
+    88→    88→  const days = Math.floor(hours / 24);
+    89→    89→  if (days < 30) return `${days}d ago`;
+    90→    90→  return new Date(iso).toLocaleDateString();
+    91→    91→}
+    92→    92→
+    93→    93→// ─── Score ring ──────────────────────────────────────────────────────────────
+    94→    94→
+    95→    95→function ScoreRing({ value, size = 84, label }: { value: number; size?: number; label?: string }) {
+    96→    96→  const stroke = 7;
+    97→    97→  const r = (size - stroke) / 2;
+    98→    98→  const c = 2 * Math.PI * r;
+    99→    99→  const pct = Math.max(0, Math.min(100, value));
+   100→   100→  return (
+   101→   101→    <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
+   102→   102→      <svg width={size} height={size} className="-rotate-90" role="img" aria-label={label ?? `${pct} out of 100`}>
+   103→   103→        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={stroke} />
+   104→   104→        <circle
+   105→   105→          cx={size / 2}
+   106→   106→          cy={size / 2}
+   107→   107→          r={r}
+   108→   108→          fill="none"
+   109→   109→          stroke="url(#ringGrad)"
+   110→   110→          strokeWidth={stroke}
+   111→   111→          strokeLinecap="round"
+   112→   112→          strokeDasharray={`${(pct / 100) * c} ${c}`}
+   113→   113→          className="transition-[stroke-dasharray] duration-700"
+   114→   114→        />
+   115→   115→        <defs>
+   116→   116→          <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+   117→   117→            <stop offset="0%" stopColor="#8b5cf6" />
+   118→   118→            <stop offset="55%" stopColor="#d946ef" />
+   119→   119→            <stop offset="100%" stopColor="#22d3ee" />
+   120→   120→          </linearGradient>
+   121→   121→        </defs>
+   122→   122→      </svg>
+   123→   123→      <span className="absolute text-lg font-bold text-white">{pct}</span>
+   124→   124→    </div>
+   125→   125→  );
+   126→   126→}
+   127→   127→
+   128→   128→// ─── Glass panel recipe ──────────────────────────────────────────────────────
+   129→   129→
+   130→   130→const GLASS = 'border border-white/[0.07] bg-white/[0.03] backdrop-blur-xl';
+   131→   131→
+   132→   132→function ScoreCard({
+   133→   133→  title,
+   134→   134→  value,
+   135→   135→  hint,
+   136→   136→  icon: Icon,
+   137→   137→  delay,
+   138→   138→  children,
+   139→   139→}: {
+   140→   140→  title: string;
+   141→   141→  value: number | null;
+   142→   142→  hint: string;
+   143→   143→  icon: React.ElementType;
+   144→   144→  delay: number;
+   145→   145→  children?: React.ReactNode;
+   146→   146→}) {
+   147→   147→  return (
+   148→   148→    <Rise3D delay={delay} className="h-full">
+   149→   149→      <Tilt3D className="h-full" max={4}>
+   150→   150→        <Card className={cn('h-full', GLASS)} style={{ transformStyle: 'preserve-3d' }}>
+   151→   151→          <CardContent className="p-5">
+   152→   152→            <div className="flex items-start justify-between gap-3">
+   153→   153→              <div className="min-w-0">
+   154→   154→                <p className="text-xs font-medium uppercase tracking-wider text-slate-500">{title}</p>
+   155→   155→                {value == null ? (
+   156→   156→                  <p className="mt-2 text-sm text-slate-500">No data yet</p>
+   157→   157→                ) : (
+   158→   158→                  <p className="mt-1.5 text-3xl font-bold leading-none text-white">
+   159→   159→                    {value}
+   160→   160→                    <span className="ml-0.5 text-sm font-medium text-slate-500">/100</span>
+   161→   161→                  </p>
+   162→   162→                )}
+   163→   163→                <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-slate-500">{hint}</p>
+   164→   164→                {children}
+   165→   165→              </div>
+   166→   166→              {value != null && <ScoreRing value={value} label={`${title}: ${value} of 100`} />}
+   167→   167→              {value == null && (
+   168→   168→                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-violet-500/15 text-violet-300">
+   169→   169→                  <Icon className="h-5 w-5" aria-hidden />
+   170→   170→                </span>
+   171→   171→              )}
+   172→   172→            </div>
+   173→   173→          </CardContent>
+   174→   174→        </Card>
+   175→   175→      </Tilt3D>
+   176→   176→    </Rise3D>
+   177→   177→  );
+   178→   178→}
+   179→   179→
+   180→   180→function QuickAction({
+   181→   181→  icon: Icon,
+   182→   182→  title,
+   183→   183→  subtitle,
+   184→   184→  onClick,
+   185→   185→  tone,
+   186→   186→  delay,
+   187→   187→}: {
+   188→   188→  icon: React.ElementType;
+   189→   189→  title: string;
+   190→   190→  subtitle: string;
+   191→   191→  onClick: () => void;
+   192→   192→  tone: 'violet' | 'fuchsia' | 'cyan' | 'blue' | 'purple' | 'amber';
+   193→   193→  delay: number;
+   194→   194→}) {
+   195→   195→  const tones: Record<string, string> = {
+   196→   196→    violet: 'from-violet-600 to-violet-500 shadow-violet-600/40',
+   197→   197→    fuchsia: 'from-fuchsia-600 to-fuchsia-500 shadow-fuchsia-600/40',
+   198→   198→    cyan: 'from-cyan-600 to-cyan-500 shadow-cyan-600/40',
+   199→   199→    blue: 'from-blue-600 to-blue-500 shadow-blue-600/40',
+   200→   200→    purple: 'from-purple-600 to-purple-500 shadow-purple-600/40',
+   201→   201→    amber: 'from-amber-600 to-amber-500 shadow-amber-600/40',
+   202→   202→  };
+   203→   203→  return (
+   204→   204→    <Rise3D delay={delay} className="h-full">
+   205→   205→      <Tilt3D max={3.5} className="h-full">
+   206→   206→        <button
+   207→   207→          type="button"
+   208→   208→          onClick={onClick}
+   209→   209→          className={cn(
+   210→   210→            'group flex h-full min-h-[44px] w-full items-center gap-4 rounded-xl border border-white/[0.07] bg-white/[0.03] p-4 text-left backdrop-blur-xl transition-all duration-200',
+   211→   211→            'hover:-translate-y-0.5 hover:border-white/[0.14] hover:bg-white/[0.05] hover:shadow-[0_10px_40px_-12px_rgba(139,92,246,0.35)]',
+   212→   212→          )}
+   213→   213→        >
+   214→   214→          <span
+   215→   215→            className={cn(
+   216→   216→              'flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br text-white transition-transform duration-300 group-hover:-rotate-3 group-hover:scale-110',
+   217→   217→              tones[tone],
+   218→   218→            )}
+   219→   219→          >
+   220→   220→            <Icon className="h-5 w-5" aria-hidden />
+   221→   221→          </span>
+   222→   222→          <span className="min-w-0">
+   223→   223→            <span className="block truncate font-semibold text-slate-100">{title}</span>
+   224→   224→            <span className="block truncate text-sm text-slate-500">{subtitle}</span>
+   225→   225→          </span>
+   226→   226→        </button>
+   227→   227→      </Tilt3D>
+   228→   228→    </Rise3D>
+   229→   229→  );
+   230→   230→}
+   231→   231→
+   232→   232→const ACTIVITY_ICONS: Record<string, React.ElementType> = {
+   233→   233→  resume_created: FilePlus2,
+   234→   234→  analysis: Gauge,
+   235→   235→  job_match: Target,
+   236→   236→  cover_letter: MailOpen,
+   237→   237→  application: BriefcaseBusiness,
+   238→   238→  version_saved: History,
+   239→   239→  resume_optimized: Wand2,
+   240→   240→};
+   241→   241→
+   242→   242→// ─── Resume card (kept from existing feature) ────────────────────────────────
+   243→   243→
+   244→   244→function ResumeCard({
+   245→   245→  resume,
+   246→   246→  onView,
+   247→   247→  onDelete,
+   248→   248→}: {
+   249→   249→  resume: ResumeSummary;
+   250→   250→  onView: (r: ResumeSummary) => void;
+   251→   251→  onDelete: (r: ResumeSummary) => void;
+   252→   252→}) {
+   253→   253→  const duplicate = useResumesStore((s) => s.duplicate);
+   254→   254→  const rename = useResumesStore((s) => s.rename);
+   255→   255→  const [pdfBusy, setPdfBusy] = useState(false);
+   256→   256→  const [renameOpen, setRenameOpen] = useState(false);
+   257→   257→  const [renameValue, setRenameValue] = useState(resume.title);
+   258→   258→  const [renaming, setRenaming] = useState(false);
+   259→   259→  const [latexBusy, setLatexBusy] = useState(false);
+   260→   260→
+   261→   261→  const downloadPdf = async () => {
+   262→   262→    setPdfBusy(true);
+   263→   263→    try {
+   264→   264→      await downloadFile(`/api/resumes/${resume.id}/pdf`, `${resume.title}.pdf`);
+   265→   265→      toast.success('PDF downloaded.');
+   266→   266→    } catch (e) {
+   267→   267→      toast.error((e as Error).message);
+   268→   268→    } finally {
+   269→   269→      setPdfBusy(false);
+   270→   270→    }
+   271→   271→  };
+   272→   272→
+   273→   273→  const downloadLatex = async () => {
+   274→   274→    setLatexBusy(true);
+   275→   275→    try {
+   276→   276→      await downloadFile(`/api/resumes/${resume.id}/latex`, `${resume.title}.tex`);
+   277→   277→      toast.success('LaTeX file downloaded.');
+   278→   278→    } catch (e) {
+   279→   279→      toast.error((e as Error).message);
+   280→   280→    } finally {
+   281→   281→      setLatexBusy(false);
+   282→   282→    }
+   283→   283→  };
+   284→   284→
+   285→   285→  return (
+   286→   286→    <Tilt3D className="h-full" max={3}>
+   287→   287→      <Card className={cn('flex h-full min-w-0 flex-col transition-shadow hover:shadow-[0_10px_40px_-12px_rgba(139,92,246,0.35)]', GLASS)}>
+   288→   288→        <CardHeader className="pb-3">
+   289→   289→          <div className="flex min-w-0 items-start justify-between gap-2">
+   290→   290→            <div className="min-w-0">
+   291→   291→              <CardTitle className="truncate text-base text-slate-100" title={resume.title}>
+   292→   292→                {resume.title}
+   293→   293→              </CardTitle>
+   294→   294→              <CardDescription className="mt-1 text-slate-500">Updated {timeAgo(resume.updatedAt)}</CardDescription>
+   295→   295→            </div>
+   296→   296→            <DropdownMenu>
+   297→   297→              <DropdownMenuTrigger asChild>
+   298→   298→                <Button variant="ghost" size="icon" className="min-h-[40px] min-w-[40px] shrink-0 text-slate-400 hover:bg-white/[0.06] hover:text-white" aria-label={`Actions for ${resume.title}`}>
+   299→   299→                  <MoreVertical className="h-4 w-4" aria-hidden />
+   300→   300→                </Button>
+   301→   301→              </DropdownMenuTrigger>
+   302→   302→              <DropdownMenuContent align="end" className="w-48 border-white/[0.08] bg-[#0a0e1f] text-slate-200">
+   303→   303→                <DropdownMenuItem onClick={() => navigate('builder', resume.id)} className="focus:bg-white/[0.06] focus:text-white">
+   304→   304→                  <Pencil className="h-4 w-4" aria-hidden /> Edit
+   305→   305→                </DropdownMenuItem>
+   306→   306→                <DropdownMenuItem onClick={() => onView(resume)} className="focus:bg-white/[0.06] focus:text-white">
+   307→   307→                  <Eye className="h-4 w-4" aria-hidden /> View
+   308→   308→                </DropdownMenuItem>
+   309→   309→                <DropdownMenuItem
+   310→   310→                  onClick={async () => {
+   311→   311→                    try {
+   312→   312→                      await duplicate(resume.id);
+   313→   313→                      toast.success('Resume duplicated.');
+   314→   314→                    } catch (e) {
+   315→   315→                      toast.error((e as Error).message);
+   316→   316→                    }
+   317→   317→                  }}
+   318→   318→                  className="focus:bg-white/[0.06] focus:text-white"
+   319→   319→                >
+   320→   320→                  <Copy className="h-4 w-4" aria-hidden /> Duplicate
+   321→   321→                </DropdownMenuItem>
+   322→   322→                <DropdownMenuItem
+   323→   323→                  onClick={() => {
+   324→   324→                    setRenameValue(resume.title);
+   325→   325→                    setRenameOpen(true);
+   326→   326→                  }}
+   327→   327→                  className="focus:bg-white/[0.06] focus:text-white"
+   328→   328→                >
+   329→   329→                  <Pencil className="h-4 w-4" aria-hidden /> Rename
+   330→   330→                </DropdownMenuItem>
+   331→   331→                <DropdownMenuSeparator className="bg-white/[0.08]" />
+   332→   332→                <DropdownMenuItem onClick={downloadPdf} disabled={pdfBusy} className="focus:bg-white/[0.06] focus:text-white">
+   333→   333→                  <Download className="h-4 w-4" aria-hidden /> {pdfBusy ? 'Creating PDF…' : 'Download PDF'}
+   334→   334→                </DropdownMenuItem>
+   335→   335→                <DropdownMenuItem onClick={downloadLatex} disabled={latexBusy} className="focus:bg-white/[0.06] focus:text-white">
+   336→   336→                  <Code2 className="h-4 w-4" aria-hidden /> {latexBusy ? 'Generating…' : 'Generate LaTeX'}
+   337→   337→                </DropdownMenuItem>
+   338→   338→                <DropdownMenuSeparator className="bg-white/[0.08]" />
+   339→   339→                <DropdownMenuItem onClick={() => onDelete(resume)} className="text-red-400 focus:bg-white/[0.06] focus:text-red-300">
+   340→   340→                  <Trash2 className="h-4 w-4" aria-hidden /> Delete
+   341→   341→                </DropdownMenuItem>
+   342→   342→              </DropdownMenuContent>
+   343→   343→            </DropdownMenu>
+   344→   344→          </div>
+   345→   345→        </CardHeader>
+   346→   346→        <CardContent className="mt-auto flex flex-wrap items-center gap-2">
+   347→   347→          {resume.targetRole ? (
+   348→   348→            <Badge variant="secondary" className="border-transparent bg-violet-500/15 text-violet-200">
+   349→   349→              {resume.targetRole}
+   350→   350→            </Badge>
+   351→   351→          ) : (
+   352→   352→            <Badge variant="outline" className="border-white/10 text-slate-400">
+   353→   353→              No target role
+   354→   354→            </Badge>
+   355→   355→          )}
+   356→   356→          <Badge variant="outline" className="border-white/10 text-slate-400">
+   357→   357→            {TEMPLATE_LABELS[resume.template] ?? resume.template}
+   358→   358→          </Badge>
+   359→   359→          <span className="text-xs text-slate-500">
+   360→   360→            {resume._count?.versions ?? 0} version{(resume._count?.versions ?? 0) === 1 ? '' : 's'}
+   361→   361→          </span>
+   362→   362→          <div className="ml-auto flex gap-1.5">
+   363→   363→            <Button size="sm" variant="outline" className="min-h-[36px] border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.08] hover:text-white" onClick={() => onView(resume)}>
+   364→   364→              <Eye className="h-3.5 w-3.5" aria-hidden /> View
+   365→   365→            </Button>
+   366→   366→            <Button
+   367→   367→              size="sm"
+   368→   368→              className="min-h-[36px] bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white hover:from-violet-500 hover:to-fuchsia-500"
+   369→   369→              onClick={() => navigate('builder', resume.id)}
+   370→   370→            >
+   371→   371→              <Pencil className="h-3.5 w-3.5" aria-hidden /> Edit
+   372→   372→            </Button>
+   373→   373→          </div>
+   374→   374→        </CardContent>
+   375→   375→
+   376→   376→        <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
+   377→   377→          <DialogContent className="border-white/[0.08] bg-[#0a0e1f] sm:max-w-sm">
+   378→   378→            <DialogHeader>
+   379→   379→              <DialogTitle className="text-slate-100">Rename resume</DialogTitle>
+   380→   380→              <DialogDescription className="text-slate-500">Give this resume a descriptive name.</DialogDescription>
+   381→   381→            </DialogHeader>
+   382→   382→            <div className="space-y-1.5">
+   383→   383→              <Label htmlFor="rename-input" className="text-slate-300">
+   384→   384→                Resume name
+   385→   385→              </Label>
+   386→   386→              <Input
+   387→   387→                id="rename-input"
+   388→   388→                value={renameValue}
+   389→   389→                onChange={(e) => setRenameValue(e.target.value)}
+   390→   390→                maxLength={80}
+   391→   391→                className="border-white/10 bg-white/[0.04] text-slate-100 placeholder:text-slate-600"
+   392→   392→                onKeyDown={(e) => {
+   393→   393→                  if (e.key === 'Enter' && renameValue.trim()) {
+   394→   394→                    setRenaming(true);
+   395→   395→                    rename(resume.id, renameValue.trim())
+   396→   396→                      .then(() => {
+   397→   397→                        toast.success('Renamed.');
+   398→   398→                        setRenameOpen(false);
+   399→   399→                      })
+   400→   400→                      .catch((err: Error) => toast.error(err.message))
+   401→   401→                      .finally(() => setRenaming(false));
+   402→   402→                  }
+   403→   403→                }}
+   404→   404→              />
+   405→   405→            </div>
+   406→   406→            <DialogFooter>
+   407→   407→              <Button variant="outline" className="border-white/10 bg-transparent text-slate-300 hover:bg-white/[0.06] hover:text-white" onClick={() => setRenameOpen(false)}>
+   408→   408→                Cancel
+   409→   409→              </Button>
+   410→   410→              <LoadingButton
+   411→   411→                loading={renaming}
+   412→   412→                loadingText="Renaming…"
+   413→   413→                disabled={!renameValue.trim()}
+   414→   414→                onClick={() => {
+   415→   415→                  setRenaming(true);
+   416→   416→                  rename(resume.id, renameValue.trim())
+   417→   417→                    .then(() => {
+   418→   418→                      toast.success('Renamed.');
+   419→   419→                      setRenameOpen(false);
+   420→   420→                    })
+   421→   421→                    .catch((err: Error) => toast.error(err.message))
+   422→   422→                    .finally(() => setRenaming(false));
+   423→   423→                }}
+   424→   424→              >
+   425→   425→                Save name
+   426→   426→              </LoadingButton>
+   427→   427→            </DialogFooter>
+   428→   428→          </DialogContent>
+   429→   429→        </Dialog>
+   430→   430→      </Card>
+   431→   431→    </Tilt3D>
+   432→   432→  );
+   433→   433→}
+   434→   434→
+   435→   435→// ─── Main view ───────────────────────────────────────────────────────────────
+   436→   436→
+   437→   437→export function DashboardView({ section }: { section: 'overview' | 'resumes' }) {
+   438→   438→  const user = useAuthStore((s) => s.user);
+   439→   439→  const { resumes, loading, loaded, fetch } = useResumesStore();
+   440→   440→  const [createOpen, setCreateOpen] = useState(false);
+   441→   441→  const [viewTarget, setViewTarget] = useState<string | null>(null);
+   442→   442→  const [deleteTarget, setDeleteTarget] = useState<ResumeSummary | null>(null);
+   443→   443→  const [deleting, setDeleting] = useState(false);
+   444→   444→
+   445→   445→  const [summary, setSummary] = useState<DashboardSummary | null>(null);
+   446→   446→  const [summaryLoading, setSummaryLoading] = useState(true);
+   447→   447→  const [summaryError, setSummaryError] = useState<string | null>(null);
+   448→   448→
+   449→   449→  const loadSummary = useCallback(async () => {
+   450→   450→    setSummaryLoading(true);
+   451→   451→    setSummaryError(null);
+   452→   452→    try {
+   453→   453→      const data = await apiFetch<DashboardSummary>('/api/dashboard/summary');
+   454→   454→      setSummary(data);
+   455→   455→    } catch (e) {
+   456→   456→      setSummaryError((e as Error).message);
+   457→   457→    } finally {
+   458→   458→      setSummaryLoading(false);
+   459→   459→    }
+   460→   460→  }, []);
+   461→   461→
+   462→   462→  useEffect(() => {
+   463→   463→    fetch(!loaded);
+   464→   464→    loadSummary();
+   465→   465→  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+   466→   466→
+   467→   467→  const remove = async () => {
+   468→   468→    if (!deleteTarget) return;
+   469→   469→    setDeleting(true);
+   470→   470→    try {
+   471→   471→      await useResumesStore.getState().remove(deleteTarget.id);
+   472→   472→      toast.success('Resume deleted.');
+   473→   473→      setDeleteTarget(null);
+   474→   474→      loadSummary();
+   475→   475→    } catch (e) {
+   476→   476→      toast.error((e as Error).message);
+   477→   477→    } finally {
+   478→   478→      setDeleting(false);
+   479→   479→    }
+   480→   480→  };
+   481→   481→
+   482→   482→  const active = section === 'resumes' ? 'resumes' : 'overview';
+   483→   483→
+   484→   484→  return (
+   485→   485→    <AppShell active={active}>
+   486→   486→      {/* Welcome */}
+   487→   487→      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+   488→   488→        <div>
+   489→   489→          <h1 className="text-2xl font-bold tracking-tight text-white">
+   490→   490→            Welcome back, {user?.name?.split(' ')[0] ?? 'there'} <span aria-hidden>👋</span>
+   491→   491→          </h1>
+   492→   492→          <p className="mt-1 text-sm text-slate-400">
+   493→   493→            {section === 'overview'
+   494→   494→              ? 'Your AI career studio — create, improve and track resumes that get interviews.'
+   495→   495→              : 'All of your resumes, in one place.'}
+   496→   496→          </p>
+   497→   497→        </div>
+   498→   498→        <Button
+   499→   499→          onClick={() => setCreateOpen(true)}
+   500→   500→          className="min-h-[44px] bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-[0_0_24px_-6px_rgba(139,92,246,0.6)] hover:from-violet-500 hover:to-fuchsia-500"
+   501→   501→        >
+   502→   502→          <Plus className="h-4 w-4" aria-hidden /> Create New Resume
+   503→   503→        </Button>
+   504→   504→      </div>
+   505→   505→
+   506→   506→      {section === 'overview' && (
+   507→   507→        <>
+   508→   508→          {/* Score cards */}
+   509→   509→          {summaryLoading ? (
+   510→   510→            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+   511→   511→              {[0, 1, 2, 3].map((i) => (
+   512→   512→                <Card key={i} className={cn('h-40 animate-pulse', GLASS)} />
+   513→   513→              ))}
+   514→   514→            </div>
+   515→   515→          ) : summaryError ? (
+   516→   516→            <Card className={cn(GLASS, 'border-red-400/20')}>
+   517→   517→              <CardContent className="flex flex-col items-center gap-3 py-8 text-center">
+   518→   518→                <p className="text-sm text-red-300">{summaryError}</p>
+   519→   519→                <Button variant="outline" size="sm" className="border-white/10 bg-white/[0.04] text-slate-200 hover:bg-white/[0.08]" onClick={loadSummary}>
+   520→   520→                  <RefreshCw className="h-4 w-4" aria-hidden /> Retry
+   521→   521→                </Button>
+   522→   522→              </CardContent>
+   523→   523→            </Card>
+   524→   524→          ) : summary ? (
+   525→   525→            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+   526→   526→              <ScoreCard
+   527→   527→                title="ATS Score"
+   528→   528→                value={summary.scores.ats}
+   529→   529→                hint={
+   530→   530→                  summary.scores.ats != null
+   531→   531→                    ? `AI Estimated ATS Score — ${summary.scores.atsResumeTitle ?? 'latest resume'}${summary.scores.atsTargetRole ? ` · ${summary.scores.atsTargetRole}` : ''}`
+   532→   532→                    : 'Run the AI Resume Analyzer to get your score.'
+   533→   533→                }
+   534→   534→                icon={Gauge}
+   535→   535→                delay={0}
+   536→   536→              >
+   537→   537→                {summary.scores.atsHistory.length > 1 && (
+   538→   538→                  <p className="mt-2 flex items-center gap-1 text-xs text-slate-500">
+   539→   539→                    {(() => {
+   540→   540→                      const h = summary.scores.atsHistory;
+   541→   541→                      const delta = h[h.length - 1].score - h[0].score;
+   542→   542→                      const Trend = delta > 0 ? TrendingUp : delta < 0 ? TrendingDown : Minus;
+   543→   543→                      return (
+   544→   544→                        <>
+   545→   545→                          <Trend className={cn('h-3.5 w-3.5', delta > 0 ? 'text-emerald-400' : delta < 0 ? 'text-red-400' : 'text-slate-500')} aria-hidden />
+   546→   546→                          {delta > 0 ? `+${delta}` : delta || '0'} pts over {h.length} runs
+   547→   547→                        </>
+   548→   548→                      );
+   549→   549→                    })()}
+   550→   550→                  </p>
+   551→   551→                )}
+   552→   552→              </ScoreCard>
+   553→   553→              <ScoreCard
+   554→   554→                title="Resume Quality"
+   555→   555→                value={summary.scores.quality}
+   556→   556→                hint={summary.scores.quality != null ? `Composite quality of "${summary.scores.qualityResumeTitle}"` : 'Create a resume to see quality.'}
+   557→   557→                icon={Sparkles}
+   558→   558→                delay={0.06}
+   559→   559→              />
+   560→   560→              <ScoreCard
+   561→   561→                title="Completion"
+   562→   562→                value={summary.scores.completion}
+   563→   563→                hint="How complete your latest resume content is."
+   564→   564→                icon={ListChecks}
+   565→   565→                delay={0.12}
+   566→   566→              >
+   567→   567→                <Progress value={summary.scores.completion} className="mt-3 h-1.5 bg-white/[0.06] [&>div]:bg-gradient-to-r [&>div]:from-violet-500 [&>div]:to-cyan-400" aria-label="Resume completion" />
+   568→   568→              </ScoreCard>
+   569→   569→              <ScoreCard
+   570→   570→                title="Profile"
+   571→   571→                value={summary.scores.profileCompleteness}
+   572→   572→                hint="Personal info completeness across your resume."
+   573→   573→                icon={UserRound}
+   574→   574→                delay={0.18}
+   575→   575→              >
+   576→   576→                <Progress value={summary.scores.profileCompleteness} className="mt-3 h-1.5 bg-white/[0.06] [&>div]:bg-gradient-to-r [&>div]:from-fuchsia-500 [&>div]:to-violet-400" aria-label="Profile completeness" />
+   577→   577→              </ScoreCard>
+   578→   578→            </div>
+   579→   579→          ) : null}
+   580→   580→
+   581→   581→          {/* Quick actions */}
+   582→   582→          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+   583→   583→            <QuickAction icon={FilePlus2} title="Create Resume" subtitle="Start from scratch with the AI Builder" tone="violet" delay={0.1} onClick={() => setCreateOpen(true)} />
+   584→   584→            <QuickAction icon={Upload} title="Upload Resume" subtitle="Recreate an existing PDF/DOCX with AI" tone="blue" delay={0.14} onClick={() => setCreateOpen(true)} />
+   585→   585→            <QuickAction icon={ScanSearch} title="Analyze Resume" subtitle="Get your AI Estimated ATS Score" tone="cyan" delay={0.18} onClick={() => navigate('analyzer')} />
+   586→   586→            <QuickAction icon={Wand2} title="Improve Resume" subtitle="AI rewrites for any section" tone="fuchsia" delay={0.22} onClick={() => navigate('rewriter')} />
+   587→   587→            <QuickAction icon={Gauge} title="Check ATS Score" subtitle="Keyword coverage + fixes" tone="purple" delay={0.26} onClick={() => navigate('analyzer')} />
+   588→   588→            <QuickAction icon={MailOpen} title="Generate Cover Letter" subtitle="Tailored to any job in seconds" tone="amber" delay={0.3} onClick={() => navigate('coverletter')} />
+   589→   589→          </div>
+   590→   590→
+   591→   591→          {/* Recommendations + suggestions */}
+   592→   592→          {summary && (summary.recommendations.length > 0 || summary.latestAnalysis) && (
+   593→   593→            <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+   594→   594→              {summary.recommendations.length > 0 && (
+   595→   595→                <Rise3D delay={0.1}>
+   596→   596→                  <Card className={cn(GLASS, 'h-full')}>
+   597→   597→                    <CardHeader className="pb-3">
+   598→   598→                      <CardTitle className="flex items-center gap-2 text-base text-slate-100">
+   599→   599→                        <span className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white">
+   600→   600→                          <Lightbulb className="h-4 w-4" aria-hidden />
+   601→   601→                        </span>
+   602→   602→                        AI Recommendations
+   603→   603→                      </CardTitle>
+   604→   604→                      <CardDescription className="text-slate-500">Personalized from your latest resume data.</CardDescription>
+   605→   605→                    </CardHeader>
+   606→   606→                    <CardContent className="space-y-2.5">
+   607→   607→                      {summary.recommendations.map((rec, i) => (
+   608→   608→                        <div key={i} className="flex items-start gap-2.5 rounded-lg border border-white/[0.05] bg-white/[0.02] px-3 py-2.5">
+   609→   609→                          <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-500/20 text-[10px] font-bold text-violet-300" aria-hidden>
+   610→   610→                            {i + 1}
+   611→   611→                          </span>
+   612→   612→                          <p className="text-sm leading-relaxed text-slate-300">{rec}</p>
+   613→   613→                        </div>
+   614→   614→                      ))}
+   615→   615→                    </CardContent>
+   616→   616→                  </Card>
+   617→   617→                </Rise3D>
+   618→   618→              )}
+   619→   619→              {summary.latestAnalysis && (
+   620→   620→                <Rise3D delay={0.14}>
+   621→   621→                  <Card className={cn(GLASS, 'h-full')}>
+   622→   622→                    <CardHeader className="pb-3">
+   623→   623→                      <CardTitle className="flex items-center gap-2 text-base text-slate-100">
+   624→   624→                        <span className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-cyan-600 to-blue-600 text-white">
+   625→   625→                          <Target className="h-4 w-4" aria-hidden />
+   626→   626→                        </span>
+   627→   627→                        Improvement Suggestions
+   628→   628→                      </CardTitle>
+   629→   629→                      <CardDescription className="text-slate-500">
+   630→   630→                        Latest analysis · {summary.latestAnalysis.resumeTitle} · score {summary.latestAnalysis.score}/100
+   631→   631→                      </CardDescription>
+   632→   632→                    </CardHeader>
+   633→   633→                    <CardContent className="space-y-2">
+   634→   634→                      {summary.latestAnalysis.improvements.slice(0, 4).map((imp, i) => (
+   635→   635→                        <div key={i} className="flex items-start gap-2 text-sm text-slate-300">
+   636→   636→                          <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-cyan-400" aria-hidden />
+   637→   637→                          <span className="leading-relaxed">{imp}</span>
+   638→   638→                        </div>
+   639→   639→                      ))}
+   640→   640→                      <Button
+   641→   641→                        variant="outline"
+   642→   642→                        size="sm"
+   643→   643→                        className="mt-2 min-h-[36px] border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.08] hover:text-white"
+   644→   644→                        onClick={() => navigate('analyzer')}
+   645→   645→                      >
+   646→   646→                        Re-run analysis <ArrowRight className="ml-1 h-3.5 w-3.5" aria-hidden />
+   647→   647→                      </Button>
+   648→   648→                    </CardContent>
+   649→   649→                  </Card>
+   650→   650→                </Rise3D>
+   651→   651→              )}
+   652→   652→            </div>
+   653→   653→          )}
+   654→   654→
+   655→   655→          {/* Recent activity */}
+   656→   656→          {summary && summary.activities.length > 0 && (
+   657→   657→            <Rise3D delay={0.18} className="mt-6">
+   658→   658→              <Card className={GLASS}>
+   659→   659→                <CardHeader className="pb-3">
+   660→   660→                  <CardTitle className="flex items-center gap-2 text-base text-slate-100">
+   661→   661→                    <span className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-purple-600 to-violet-600 text-white">
+   662→   662→                      <ActivityIcon className="h-4 w-4" aria-hidden />
+   663→   663→                    </span>
+   664→   664→                    Recent Activity
+   665→   665→                  </CardTitle>
+   666→   666→                </CardHeader>
+   667→   667→                <CardContent>
+   668→   668→                  <ol className="relative space-y-4 border-l border-white/[0.08] pl-5">
+   669→   669→                    {summary.activities.slice(0, 6).map((a) => {
+   670→   670→                      const AIcon = ACTIVITY_ICONS[a.type] ?? FileText;
+   671→   671→                      return (
+   672→   672→                        <li key={a.id} className="relative">
+   673→   673→                          <span className="absolute -left-[27px] flex h-4 w-4 items-center justify-center rounded-full border border-white/10 bg-[#0a0e1f]" aria-hidden>
+   674→   674→                            <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-violet-400 to-cyan-400" />
+   675→   675→                          </span>
+   676→   676→                          <div className="flex flex-wrap items-baseline gap-x-2">
+   677→   677→                            <AIcon className="h-3.5 w-3.5 text-slate-500" aria-hidden />
+   678→   678→                            <p className="text-sm text-slate-300">{a.message}</p>
+   679→   679→                            <span className="text-xs text-slate-600">{timeAgo(a.createdAt)}</span>
+   680→   680→                          </div>
+   681→   681→                        </li>
+   682→   682→                      );
+   683→   683→                    })}
+   684→   684→                  </ol>
+   685→   685→                </CardContent>
+   686→   686→              </Card>
+   687→   687→            </Rise3D>
+   688→   688→          )}
+   689→   689→
+   690→   690→          {/* Recent resumes */}
+   691→   691→          <div className="mt-8">
+   692→   692→            <div className="mb-3 flex items-center justify-between">
+   693→   693→              <h2 className="text-lg font-semibold text-white">Recent resumes</h2>
+   694→   694→              {resumes.length > 4 && (
+   695→   695→                <Button variant="ghost" size="sm" className="min-h-[36px] text-slate-400 hover:bg-white/[0.06] hover:text-white" onClick={() => navigate('resumes')}>
+   696→   696→                  View all <Files className="ml-1 h-4 w-4" aria-hidden />
+   697→   697→                </Button>
+   698→   698→              )}
+   699→   699→            </div>
+   700→   700→            {loading && !loaded ? (
+   701→   701→              <div className="grid gap-4 sm:grid-cols-2">
+   702→   702→                {[0, 1].map((i) => (
+   703→   703→                  <Card key={i} className={cn('h-40 animate-pulse', GLASS)} />
+   704→   704→                ))}
+   705→   705→              </div>
+   706→   706→            ) : resumes.length === 0 ? (
+   707→   707→              <EmptyResumes onCreate={() => setCreateOpen(true)} />
+   708→   708→            ) : (
+   709→   709→              <div className="grid gap-4 sm:grid-cols-2">
+   710→   710→                {resumes.slice(0, 4).map((r, i) => (
+   711→   711→                  <Rise3D key={r.id} delay={i * 0.05} className="h-full">
+   712→   712→                    <ResumeCard resume={r} onView={(res) => setViewTarget(res.id)} onDelete={setDeleteTarget} />
+   713→   713→                  </Rise3D>
+   714→   714→                ))}
+   715→   715→              </div>
+   716→   716→            )}
+   717→   717→          </div>
+   718→   718→        </>
+   719→   719→      )}
+   720→   720→
+   721→   721→      {section === 'resumes' && (
+   722→   722→        <div className="mt-2">
+   723→   723→          {loading && !loaded ? (
+   724→   724→            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+   725→   725→              {[0, 1, 2].map((i) => (
+   726→   726→                <Card key={i} className={cn('h-40 animate-pulse', GLASS)} />
+   727→   727→              ))}
+   728→   728→            </div>
+   729→   729→          ) : resumes.length === 0 ? (
+   730→   730→            <EmptyResumes onCreate={() => setCreateOpen(true)} />
+   731→   731→          ) : (
+   732→   732→            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+   733→   733→              {resumes.map((r, i) => (
+   734→   734→                <Rise3D key={r.id} delay={Math.min(i, 8) * 0.04} className="h-full">
+   735→   735→                  <ResumeCard resume={r} onView={(res) => setViewTarget(res.id)} onDelete={setDeleteTarget} />
+   736→   736→                </Rise3D>
+   737→   737→              ))}
+   738→   738→            </div>
+   739→   739→          )}
+   740→   740→        </div>
+   741→   741→      )}
+   742→   742→
+   743→   743→      <NewResumeDialog open={createOpen} onOpenChange={setCreateOpen} />
+   744→   744→      <ViewResumeDialog resumeId={viewTarget} open={!!viewTarget} onOpenChange={(o) => !o && setViewTarget(null)} />
+   745→   745→
+   746→   746→      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+   747→   747→        <AlertDialogContent className="border-white/[0.08] bg-[#0a0e1f]">
+   748→   748→          <AlertDialogHeader>
+   749→   749→            <AlertDialogTitle className="text-slate-100">Delete “{deleteTarget?.title}”?</AlertDialogTitle>
+   750→   750→            <AlertDialogDescription className="text-slate-400">
+   751→   751→              This permanently deletes this resume along with its saved versions and analyses. This action cannot be undone.
+   752→   752→            </AlertDialogDescription>
+   753→   753→          </AlertDialogHeader>
+   754→   754→          <AlertDialogFooter>
+   755→   755→            <AlertDialogCancel className="border-white/10 bg-transparent text-slate-300 hover:bg-white/[0.06] hover:text-white">Cancel</AlertDialogCancel>
+   756→   756→            <AlertDialogAction
+   757→   757→              className="bg-red-600 text-white hover:bg-red-500"
+   758→   758→              disabled={deleting}
+   759→   759→              onClick={(e) => {
+   760→   760→                e.preventDefault();
+   761→   761→                remove();
+   762→   762→              }}
+   763→   763→            >
+   764→   764→              {deleting ? 'Deleting…' : 'Delete resume'}
+   765→   765→            </AlertDialogAction>
+   766→   766→          </AlertDialogFooter>
+   767→   767→        </AlertDialogContent>
+   768→   768→      </AlertDialog>
+   769→   769→    </AppShell>
+   770→   770→  );
+   771→   771→}
+   772→   772→
+   773→   773→function EmptyResumes({ onCreate }: { onCreate: () => void }) {
+   774→   774→  return (
+   775→   775→    <Card className={cn('border-dashed border-white/[0.12]', GLASS)}>
+   776→   776→      <CardContent className="flex flex-col items-center justify-center gap-4 py-14 text-center">
+   777→   777→        <Float3D duration={5}>
+   778→   778→          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-500/15 text-violet-300 shadow-[0_0_30px_-8px_rgba(139,92,246,0.6)]">
+   779→   779→            <FolderOpen className="h-7 w-7" aria-hidden />
+   780→   780→          </span>
+   781→   781→        </Float3D>
+   782→   782→        <div>
+   783→   783→          <p className="font-semibold text-slate-100">You haven&apos;t created a resume yet.</p>
+   784→   784→          <p className="mt-1 max-w-sm text-sm text-slate-400">
+   785→   785→            Start from scratch, upload an existing resume to recreate it with AI, or explore with sample data.
+   786→   786→          </p>
+   787→   787→        </div>
+   788→   788→        <Button
+   789→   789→          onClick={onCreate}
+   790→   790→          className="min-h-[44px] bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white hover:from-violet-500 hover:to-fuchsia-500"
+   791→   791→        >
+   792→   792→          <Sparkles className="h-4 w-4" aria-hidden /> Create Your First Resume
+   793→   793→        </Button>
+   794→   794→      </CardContent>
+   795→   795→    </Card>
+   796→   796→  );
+   797→   797→}
+   798→   798→

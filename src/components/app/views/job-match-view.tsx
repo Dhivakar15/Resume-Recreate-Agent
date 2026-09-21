@@ -7,8 +7,9 @@ import { LoadingButton } from '@/components/app/loading-button';
 import { Float3D, Rise3D, Tilt3D } from '@/components/app/three-d/motion';
 import { apiFetch } from '@/lib/client/api';
 import { useResumesStore } from '@/stores/resumes-store';
-import { type JobMatchAnalysis } from '@/types/resume';
+import { type JobMatchAnalysis, type ResumeData } from '@/types/resume';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,11 +19,13 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   BriefcaseBusiness,
   Check,
+  FilePlus2,
   GraduationCap,
   Clock3,
   Info,
   ListChecks,
   Sparkles,
+  TrendingUp,
   Wand2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -94,6 +97,15 @@ export function JobMatchView({ preselectedId }: { preselectedId?: string }) {
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<JobMatchAnalysis | null>(null);
   const [usedResumeId, setUsedResumeId] = useState<string | null>(null);
+  const [optimizing, setOptimizing] = useState(false);
+  const [optimization, setOptimization] = useState<{
+    optimizedData: ResumeData;
+    changes: string[];
+    matchBefore: number;
+    matchAfter: number;
+    jobTitle: string;
+  } | null>(null);
+  const [savingCopy, setSavingCopy] = useState(false);
   const bootedRef = useRef(false);
 
   // Load resumes once; preselect the requested resume when it exists.
@@ -133,6 +145,7 @@ export function JobMatchView({ preselectedId }: { preselectedId?: string }) {
       });
       setAnalysis(result);
       setUsedResumeId(resumeId || null);
+      setOptimization(null);
       toast.success('Job description analyzed — review the extracted requirements below.');
     } catch (e) {
       toast.error((e as Error).message);
@@ -143,6 +156,52 @@ export function JobMatchView({ preselectedId }: { preselectedId?: string }) {
 
   const { requirements, match } = analysis ?? {};
   const showMatch = Boolean(analysis && usedResumeId && match);
+
+  const runOptimize = async () => {
+    if (!usedResumeId || optimizing) return;
+    setOptimizing(true);
+    try {
+      const result = await apiFetch<{
+        optimizedData: ResumeData;
+        changes: string[];
+        matchBefore: number;
+        matchAfter: number;
+        jobTitle: string;
+      }>('/api/ai/optimize-job', {
+        method: 'POST',
+        json: { resumeId: usedResumeId, jobDescription: content.trim(), title: title.trim() || undefined },
+      });
+      setOptimization(result);
+      toast.success(`Optimized draft ready — match ${result.matchBefore}% → ${result.matchAfter}%.`);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setOptimizing(false);
+    }
+  };
+
+  const saveOptimizedCopy = async () => {
+    if (!optimization || savingCopy) return;
+    setSavingCopy(true);
+    try {
+      const base = matchedResume?.title ?? 'Resume';
+      await apiFetch('/api/resumes', {
+        method: 'POST',
+        json: {
+          title: `${base} — ${optimization.jobTitle}`.slice(0, 120),
+          targetRole: matchedResume?.targetRole ?? undefined,
+          template: matchedResume?.template ?? 'modern',
+          data: optimization.optimizedData,
+        },
+      });
+      await fetchResumes(true);
+      toast.success('Saved as a new resume copy — find it in My Resumes.');
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSavingCopy(false);
+    }
+  };
 
   return (
     <AppShell active="jobmatch">
@@ -431,6 +490,54 @@ export function JobMatchView({ preselectedId }: { preselectedId?: string }) {
                       <p className="text-sm text-muted-foreground">No suggestions for this combination yet.</p>
                     )}
                   </div>
+
+                  {/* Optimized resume for this job */}
+                  {usedResumeId && (
+                    <div className="space-y-3 rounded-xl border border-dashed bg-muted/30 p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <h3 className="flex items-center gap-1.5 text-sm font-semibold">
+                          <Sparkles className="h-4 w-4 text-violet-600 dark:text-violet-400" aria-hidden /> Optimized Version for This Job
+                        </h3>
+                        {optimization && (
+                          <Badge className="gap-1 border-transparent bg-violet-100 text-violet-800 dark:bg-violet-950/60 dark:text-violet-300">
+                            <TrendingUp className="h-3.5 w-3.5" aria-hidden />
+                            Match {optimization.matchBefore}% → {optimization.matchAfter}%
+                          </Badge>
+                        )}
+                      </div>
+                      {!optimization ? (
+                        <>
+                          <p className="text-sm text-muted-foreground">
+                            AI rewrites your summary and bullet wording to align with this job — grounded strictly in your existing experience, nothing invented. Saved as a separate copy, so your original stays untouched.
+                          </p>
+                          <LoadingButton loading={optimizing} loadingText="Optimizing your resume…" onClick={runOptimize} className="min-h-[44px]">
+                            <Wand2 className="h-4 w-4" aria-hidden /> Generate Optimized Version
+                          </LoadingButton>
+                        </>
+                      ) : (
+                        <div className="space-y-3">
+                          {optimization.changes.length > 0 && (
+                            <ul className="space-y-1.5">
+                              {optimization.changes.map((c, i) => (
+                                <li key={i} className="flex items-start gap-2 text-sm">
+                                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden />
+                                  <span className="text-pretty">{c}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                          <div className="flex flex-wrap gap-2">
+                            <Button variant="outline" size="sm" className="min-h-[40px]" onClick={runOptimize} disabled={optimizing}>
+                              <Wand2 className="h-4 w-4" aria-hidden /> {optimizing ? 'Optimizing…' : 'Regenerate'}
+                            </Button>
+                            <LoadingButton loading={savingCopy} loadingText="Saving copy…" onClick={saveOptimizedCopy} className="min-h-[40px]">
+                              <FilePlus2 className="h-4 w-4" aria-hidden /> Save as new resume copy
+                            </LoadingButton>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
               </Rise3D>

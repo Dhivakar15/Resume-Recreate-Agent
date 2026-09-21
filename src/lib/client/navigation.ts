@@ -1,13 +1,56 @@
 'use client';
 
-export type ViewName = 'landing' | 'login' | 'register' | 'dashboard' | 'resumes' | 'builder' | 'analyzer' | 'jobmatch';
+export type ViewName =
+  | 'landing'
+  | 'login'
+  | 'register'
+  | 'dashboard'
+  | 'resumes'
+  | 'builder'
+  | 'analyzer'
+  | 'jobmatch'
+  | 'rewriter'
+  | 'templates'
+  | 'versions'
+  | 'coverletter'
+  | 'skillgap'
+  | 'career'
+  | 'projectgen'
+  | 'linkedin'
+  | 'interview'
+  | 'mockinterview'
+  | 'tracker'
+  | 'analytics'
+  | 'settings';
 
 export interface AppRoute {
   view: ViewName;
   id?: string;
 }
 
-const VIEWS: ViewName[] = ['landing', 'login', 'register', 'dashboard', 'resumes', 'builder', 'analyzer', 'jobmatch'];
+const VIEWS: ViewName[] = [
+  'landing',
+  'login',
+  'register',
+  'dashboard',
+  'resumes',
+  'builder',
+  'analyzer',
+  'jobmatch',
+  'rewriter',
+  'templates',
+  'versions',
+  'coverletter',
+  'skillgap',
+  'career',
+  'projectgen',
+  'linkedin',
+  'interview',
+  'mockinterview',
+  'tracker',
+  'analytics',
+  'settings',
+];
 
 export function parseHash(): AppRoute {
   if (typeof window === 'undefined') return { view: 'landing' };
@@ -25,4 +68,23 @@ export function navigate(view: ViewName, id?: string) {
   }
 }
 
-export const PROTECTED_VIEWS: ViewName[] = ['dashboard', 'resumes', 'builder', 'analyzer', 'jobmatch'];
+export const PROTECTED_VIEWS: ViewName[] = [
+  'dashboard',
+  'resumes',
+  'builder',
+  'analyzer',
+  'jobmatch',
+  'rewriter',
+  'templates',
+  'versions',
+  'coverletter',
+  'skillgap',
+  'career',
+  'projectgen',
+  'linkedin',
+  'interview',
+  'mockinterview',
+  'tracker',
+  'analytics',
+  'settings',
+];

@@ -6,6 +6,7 @@ import { computeJobMatchScore } from '@/lib/ats-score';
 import { resumeToText } from '@/lib/resume-utils';
 import { normalizeResumeData, type ResumeData } from '@/types/resume';
 import { rateLimit } from '@/lib/rate-limit';
+import { logActivity } from '@/lib/activity';
 
 /**
  * POST /api/ai/job-match — extracts structured requirements from a pasted job
@@ -70,6 +71,7 @@ export async function POST(req: Request) {
         });
       }
 
+      await logActivity(user.id, 'job_match', `Job match analyzed against "${jd.title}" — ${analysis.match.score}% fit`);
       return ok({ analysis, jobDescriptionId: jd.id });
     } catch (e) {
       if (e instanceof AIError) {

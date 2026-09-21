@@ -128,3 +128,101 @@ export function sanitizeResumeData(raw: unknown): ResumeData {
     languages: Array.isArray(data.languages) ? data.languages.slice(0, 15).map((e) => ({ ...e, language: clip(e?.language, 60), proficiency: clip(e?.proficiency, 40) })) : base.languages,
   };
 }
+
+// ─── feat-9 platform schemas ─────────────────────────────────────────────────
+
+export const rewriteSchema = z.object({
+  resumeId: z.string().min(1).optional(),
+  text: z.string().trim().min(10, 'Please write at least a sentence to rewrite.').max(6000),
+  mode: z.enum(['rewrite', 'improve', 'professional', 'concise', 'action-verbs', 'ats', 'quantify', 'grammar']),
+  targetRole: z.string().trim().max(80).optional(),
+  context: z.string().trim().max(4000).optional(),
+});
+
+export const coverLetterSchema = z.object({
+  resumeId: z.string().min(1),
+  company: z.string().trim().min(1, 'Company name is required.').max(120),
+  role: z.string().trim().min(1, 'Job role is required.').max(120),
+  jobDescription: z.string().trim().max(15000).optional(),
+  tone: z.enum(['professional', 'formal', 'short']).default('professional'),
+});
+
+export const saveCoverLetterSchema = z.object({
+  resumeId: z.string().min(1).nullable().optional(),
+  company: z.string().trim().min(1).max(120),
+  role: z.string().trim().min(1).max(120),
+  tone: z.enum(['professional', 'formal', 'short']).default('professional'),
+  content: z.string().trim().min(20).max(20000),
+});
+
+export const updateCoverLetterSchema = z.object({
+  content: z.string().trim().min(20, 'The letter is too short to save.').max(20000),
+});
+
+export const skillGapSchema = z.object({
+  resumeId: z.string().min(1),
+  targetRole: z.string().trim().min(1, 'Target role is required.').max(80),
+  jobDescription: z.string().trim().max(15000).optional(),
+});
+
+export const careerSchema = z.object({
+  resumeId: z.string().min(1),
+});
+
+export const projectDescriptionSchema = z.object({
+  name: z.string().trim().min(2, 'Project name is required.').max(120),
+  idea: z.string().trim().min(15, 'Describe the project idea in at least 15 characters.').max(3000),
+  targetRole: z.string().trim().max(80).optional(),
+});
+
+export const linkedinSchema = z.object({
+  resumeId: z.string().min(1),
+});
+
+export const interviewQuestionsSchema = z.object({
+  resumeId: z.string().min(1),
+  role: z.string().trim().max(80).optional(),
+});
+
+export const mockInterviewSchema = z.object({
+  resumeId: z.string().min(1),
+  role: z.string().trim().max(80).optional(),
+  askedHistory: z.array(z.string().trim().max(600)).max(12).default([]),
+  question: z.string().trim().max(600).optional(),
+  answer: z.string().trim().max(6000).optional(),
+});
+
+export const assistantSchema = z.object({
+  resumeId: z.string().min(1).optional(),
+  messages: z
+    .array(
+      z.object({
+        role: z.enum(['user', 'assistant']),
+        content: z.string().trim().min(1).max(6000),
+      }),
+    )
+    .min(1)
+    .max(24),
+});
+
+export const optimizeJobSchema = z.object({
+  resumeId: z.string().min(1),
+  jobDescription: z.string().trim().min(50, 'Paste a longer job description (at least 50 characters).').max(20000),
+  title: z.string().trim().max(120).optional(),
+});
+
+export const applicationCreateSchema = z.object({
+  company: z.string().trim().min(1, 'Company is required.').max(120),
+  role: z.string().trim().min(1, 'Job role is required.').max(120),
+  status: z.enum(['Applied', 'Shortlisted', 'Interview', 'Selected', 'Rejected']).default('Applied'),
+  appliedDate: z.string().datetime().optional().or(z.literal('')),
+  interviewDate: z.string().datetime().optional().or(z.literal('')),
+  notes: z.string().trim().max(2000).optional(),
+});
+
+export const applicationUpdateSchema = applicationCreateSchema.partial();
+
+export const markNotificationsSchema = z.object({
+  ids: z.array(z.string().min(1)).max(100).optional(),
+  all: z.boolean().optional(),
+});
