@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Decorative 3D backdrop for the auth pages — "Emerald & Antique Gold" scene.
+ * Decorative 3D backdrop for the auth pages — "Royal Amethyst & Champagne" scene.
  * Purely presentational (aria-hidden, pointer-events-none): a rotating
  * gold-framed glass cube, floating resume sheets, gold dust and a parallax
  * layer system driven by the pointer. When `mode` is "login" a golden 3D
@@ -87,7 +87,7 @@ function RotatingCube({ size, duration, spin, className, parallaxX, parallaxY }:
             return (
               <div
                 key={index}
-                className="absolute inset-0 flex items-center justify-center border border-[#d4a548]/30 bg-[#0f3d26]/30 shadow-[inset_0_0_24px_rgba(212,165,72,0.08)] backdrop-blur-[2px]"
+                className="absolute inset-0 flex items-center justify-center border border-[#d4a548]/30 bg-[#331a5c]/30 shadow-[inset_0_0_24px_rgba(212,165,72,0.08)] backdrop-blur-[2px]"
                 style={{ transform, width: size, height: size }}
               >
                 <Icon className="h-[38%] w-[38%] text-[#d4a548]/60" strokeWidth={1.5} />
@@ -178,7 +178,7 @@ function FloatingSeal({
           transition={{ repeat: Infinity, duration: 10, delay, ease: 'easeInOut' }}
         >
           <span className="absolute -inset-6 rounded-full bg-[#d4a548]/10 blur-2xl" />
-          <span className="relative flex h-24 w-24 items-center justify-center rounded-full border-2 border-[#d4a548]/45 bg-gradient-to-br from-[#0f3d26]/70 to-[#081a10]/70 shadow-[0_30px_60px_-20px_rgba(0,0,0,0.85),inset_0_0_30px_rgba(212,165,72,0.12)] backdrop-blur-[3px]">
+          <span className="relative flex h-24 w-24 items-center justify-center rounded-full border-2 border-[#d4a548]/45 bg-gradient-to-br from-[#331a5c]/70 to-[#1d0d38]/70 shadow-[0_30px_60px_-20px_rgba(0,0,0,0.85),inset_0_0_30px_rgba(212,165,72,0.12)] backdrop-blur-[3px]">
             <span className="absolute inset-2 rounded-full border border-[#d4a548]/30" />
             <KeyRound className="h-9 w-9 text-[#e9c876]" strokeWidth={1.5} />
           </span>
@@ -218,8 +218,8 @@ export function AuthScene({ mode = 'login' }: { mode?: 'login' | 'register' }) {
 
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
-      {/* Deep emerald base + corner glows */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,#124a2e_0%,transparent_55%),radial-gradient(ellipse_at_bottom_right,#0b3520_0%,transparent_50%),linear-gradient(160deg,#0a2416_0%,#04120b_55%,#081f12_100%)]" />
+      {/* Deep amethyst base + corner glows */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,#45226e_0%,transparent_55%),radial-gradient(ellipse_at_bottom_right,#321654_0%,transparent_50%),linear-gradient(160deg,#241040_0%,#120722_55%,#1c0c33_100%)]" />
 
       {/* Classical diamond lattice */}
       <div
@@ -312,7 +312,7 @@ export function AuthScene({ mode = 'login' }: { mode?: 'login' | 'register' }) {
       />
 
       {/* Depth vignette */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(3,12,8,0.6)_100%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(9,3,20,0.6)_100%)]" />
     </div>
   );
 }

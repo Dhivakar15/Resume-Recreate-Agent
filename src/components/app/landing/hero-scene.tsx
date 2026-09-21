@@ -2,7 +2,7 @@
 
 /**
  * Decorative 3D layer for the landing hero — the light-theme sibling of the
- * auth scene: emerald glass cubes, a floating resume sheet and gold dust,
+ * auth scene: amethyst glass cubes, a floating resume sheet and gold dust,
  * drifting on gentle loops with pointer parallax. Purely presentational
  * (aria-hidden, pointer-events-none) and rendered behind the hero content.
  * All animation is skipped when the user prefers reduced motion.
@@ -44,7 +44,7 @@ interface CubeProps {
   parallaxY?: MotionValue<number>;
 }
 
-/** A slowly rotating light-theme glass cube with emerald frames. */
+/** A slowly rotating light-theme glass cube with amethyst frames. */
 function GlassCube({ size, duration, spin, className, parallaxX, parallaxY }: CubeProps) {
   const half = size / 2;
   const faces = [
@@ -74,10 +74,10 @@ function GlassCube({ size, duration, spin, className, parallaxX, parallaxY }: Cu
             return (
               <div
                 key={index}
-                className="absolute inset-0 flex items-center justify-center border border-[#136b43]/25 bg-[#fffdf4]/60 shadow-[inset_0_0_18px_rgba(19,107,67,0.08)] backdrop-blur-[2px] dark:border-emerald-500/20 dark:bg-emerald-900/30"
+                className="absolute inset-0 flex items-center justify-center border border-[#6d28d9]/25 bg-[#fffdf4]/60 shadow-[inset_0_0_18px_rgba(109,40,217,0.08)] backdrop-blur-[2px] dark:border-violet-500/20 dark:bg-violet-900/30"
                 style={{ transform, width: size, height: size }}
               >
-                <Icon className="h-[38%] w-[38%] text-emerald-700/60 dark:text-emerald-300/60" strokeWidth={1.5} />
+                <Icon className="h-[38%] w-[38%] text-violet-700/60 dark:text-violet-300/60" strokeWidth={1.5} />
               </div>
             );
           })}
@@ -104,21 +104,21 @@ function FloatingSheet({ className, depth, delay = 0, parallaxX, parallaxY }: Sh
       aria-hidden
     >
       <motion.div
-        className="w-36 rounded-lg border border-[#136b43]/20 bg-[#fffdf4]/75 p-4 shadow-[0_24px_50px_-24px_rgba(6,78,59,0.3)] backdrop-blur-[3px] dark:border-emerald-500/20 dark:bg-emerald-950/50"
+        className="w-36 rounded-lg border border-[#6d28d9]/20 bg-[#fffdf4]/75 p-4 shadow-[0_24px_50px_-24px_rgba(59,17,99,0.3)] backdrop-blur-[3px] dark:border-violet-500/20 dark:bg-violet-950/50"
         style={{ transform: `rotateX(10deg) rotateY(-14deg) translateZ(${depth}px)` }}
         animate={{ y: [0, -12, 0] }}
         transition={{ repeat: Infinity, duration: 7, delay, ease: 'easeInOut' }}
       >
-        <div className="mb-3 h-2.5 w-14 rounded-full bg-emerald-700/50 dark:bg-emerald-400/50" />
+        <div className="mb-3 h-2.5 w-14 rounded-full bg-violet-700/50 dark:bg-violet-400/50" />
         <div className="space-y-1.5">
-          <div className="h-1.5 w-full rounded-full bg-emerald-900/15 dark:bg-emerald-100/15" />
-          <div className="h-1.5 w-5/6 rounded-full bg-emerald-900/15 dark:bg-emerald-100/15" />
-          <div className="h-1.5 w-4/6 rounded-full bg-emerald-900/15 dark:bg-emerald-100/15" />
+          <div className="h-1.5 w-full rounded-full bg-violet-900/15 dark:bg-violet-100/15" />
+          <div className="h-1.5 w-5/6 rounded-full bg-violet-900/15 dark:bg-violet-100/15" />
+          <div className="h-1.5 w-4/6 rounded-full bg-violet-900/15 dark:bg-violet-100/15" />
         </div>
         <div className="flex flex-wrap gap-1.5 pt-3">
-          <div className="h-3 w-9 rounded-full border border-emerald-600/30 dark:border-emerald-400/30" />
-          <div className="h-3 w-11 rounded-full border border-emerald-600/30 dark:border-emerald-400/30" />
-          <div className="h-3 w-8 rounded-full border border-emerald-600/30 dark:border-emerald-400/30" />
+          <div className="h-3 w-9 rounded-full border border-violet-600/30 dark:border-violet-400/30" />
+          <div className="h-3 w-11 rounded-full border border-violet-600/30 dark:border-violet-400/30" />
+          <div className="h-3 w-8 rounded-full border border-violet-600/30 dark:border-violet-400/30" />
         </div>
       </motion.div>
     </motion.div>

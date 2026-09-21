@@ -62,7 +62,7 @@ function NavItems({ active, onNavigate }: { active: ShellActive; onNavigate?: ()
             className={cn(
               'flex min-h-[44px] w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
               active === item.key
-                ? 'translate-x-1 bg-teal-50 text-teal-800 shadow-sm shadow-teal-600/10 dark:bg-teal-950/60 dark:text-teal-200'
+                ? 'translate-x-1 bg-violet-50 text-violet-800 shadow-sm shadow-violet-600/10 dark:bg-violet-950/60 dark:text-violet-200'
                 : 'text-muted-foreground hover:translate-x-1 hover:bg-muted hover:text-foreground',
             )}
           >
@@ -81,7 +81,7 @@ function UserCard() {
   return (
     <div className="rounded-xl border bg-card p-3">
       <div className="flex items-center gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-emerald-600 text-sm font-semibold text-white shadow-md shadow-teal-600/25" aria-hidden>
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-purple-600 text-sm font-semibold text-white shadow-md shadow-violet-600/25" aria-hidden>
           {(user?.name ?? 'U').slice(0, 1).toUpperCase()}
         </span>
         <div className="min-w-0 flex-1">

@@ -173,3 +173,24 @@ Work Log:
 
 Stage Summary:
 - The first page now presents the classical "Heritage Ivory & Emerald with Antique Gold" identity — a light parchment counterpart to the dark classical auth pages — with all 3D effects, content, routing, auth behaviour and accessibility untouched. Brand mark unified to heritage emerald app-wide. No API, logic or data changes.
+
+---
+Task ID: feat-7
+Agent: main (Z.ai Code)
+Task: Remove ALL green from the classical theme — full re-theme to "Royal Amethyst & Champagne" ("no green i need different colour")
+
+Work Log:
+- User rejected green entirely after feat-6's emerald landing. Chose "Royal Amethyst & Champagne" (deep violet #3b1163/#4c1d95/#6d28d9, bright violet #7c3aed/#8b5cf6, lavender tints, champagne gold #d4a548/#e9c876 + ivory/cream text kept as the classical thread) — imperial purple is the archetypal classical colour and clearly distinct from both previously rejected palettes (burgundy+gold, emerald+gold).
+- auth-scene.tsx: scene base radial+linear gradient remapped (#124a2e/#0b3520/#0a2416/#04120b/#081f12 → #45226e/#321654/#241040/#120722/#1c0c33); cube faces #0f3d26/30 → #331a5c/30; wax-seal disc gradient → #331a5c/#1d0d38; vignette rgba(3,12,8,.6) → rgba(9,3,20,.6). All champagne/gold ornament, lattice, rings, monogram, dust unchanged.
+- auth-view.tsx: page bg #04120b → #120722; glass card #06170f/85 → #170b2e/85; BrandLockup box #115a35/#0a2e1c → #5b2a91/#2e1450; login key chip → violet; submit button #157347→#0d5030 (hover #1a8a55→#11633c) → #7c3aed→#5b21b6 (hover #8b5cf6→#6d28d9). Cream/gold text (#f4e9d4/#c9b58f/#e9c876/#e2cfa8) and ALL logic untouched.
+- landing-view.tsx: heading keyword gradient → violet→champagne (#4a1d6e→#6d28d9→#9a7a26, dark violet-300/400→#d4a548); hero CTA + ATS badge → violet #6d28d9 with #4c1d95 shadows; mockup section bars → violet; feature icon chips gold→lavender (#f0eafb bg, #6d28d9 icon, #a78bfa ring); how-it-works circles → violet gradient; benefit checks → violet; final CTA band → #3b1163→#4c1d95→#6d28d9 with violet-50 text and #3b1163 button text; hero dark tints teal/emerald-950 → violet/purple-950. Ivory canvas, champagne pill/pills/badge/hairlines kept (duotone).
+- hero-scene.tsx: cube frames + sheets #136b43 → #6d28d9 (light) and emerald-500/700/900 dark classes → violet equivalents; icon tints violet; sheet skeleton violet. Gold dust unchanged.
+- logo.tsx: brand box → #6d28d9→#4c1d95, "Recreate" → #6d28d9 (dark violet-400).
+- app-shell.tsx (bridge to the violet logo): active nav teal→violet-50/800/950/200; user avatar gradient teal-500→emerald-600 replaced with violet-500→purple-600.
+- dashboard-view.tsx: 5 remaining theme accents (target-role badge, stat icon squares, both quick-action squares, empty-state icon) teal/emerald → violet/purple. Semantic success greens elsewhere (matched keywords, high ATS scores in analyzer/job-match) intentionally untouched.
+- Green sweep: rg for emerald|teal|green|old hexes across all 7 touched files → only a stale comment (fixed). 
+- Verification (agent-browser): desktop 1440x900 landing hero (violet gradient headline, violet CTA, amethyst cubes/sheets, champagne badges), benefits + final CTA band (violet with gold glow) + footer; login page = deep royal amethyst scene with gold ornaments, violet lockup chip + submit button; register page likewise (no seal, correct per-mode content); real sign-in carol-no-cookie@example.com → dashboard now violet end-to-end (logo, active nav, avatar, stat icons, quick actions); mobile 390x844 renders clean with no overflow (authed session shows dashboard; #/login correctly redirects authed users to dashboard so mobile login itself wasn't re-captured — layout unchanged from prior verified runs, only hue); zero page/console errors; dev.log 200s.
+- bunx eslint on all 7 touched files: clean. bunx tsc --noEmit: clean for app code.
+
+Stage Summary:
+- Green is fully gone from the themed surfaces: landing, login, register, logo, app shell chrome and dashboard accents now share one coherent "Royal Amethyst & Champagne" classical identity (light ivory landing + dark amethyst auth). 3D effects, all logic, routing, auth and accessibility untouched. Analyzer/job-match success-semantics green (matched skills / high scores) deliberately preserved as universal UX feedback colours.

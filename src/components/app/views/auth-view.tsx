@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Login / Register view — "Emerald & Antique Gold" classical edition.
+ * Login / Register view — "Royal Amethyst & Champagne" classical edition.
  * A dark, ornamental 3D scene (see auth-scene.tsx) behind a glass form card
  * that tilts with the pointer and flips in 3D when switching modes.
  * The sign-in page gets its own identity: a dedicated wax-seal emblem in the
@@ -131,7 +131,7 @@ const FEATURES: Record<'login' | 'register', Feature[]> = {
 function BrandLockup() {
   return (
     <span className="inline-flex items-center gap-3">
-      <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#d4a548]/50 bg-gradient-to-br from-[#115a35] to-[#0a2e1c] shadow-[0_8px_24px_-8px_rgba(212,165,72,0.45)]">
+      <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#d4a548]/50 bg-gradient-to-br from-[#5b2a91] to-[#2e1450] shadow-[0_8px_24px_-8px_rgba(212,165,72,0.45)]">
         <FileText className="h-6 w-6 text-[#e9c876]" strokeWidth={2} aria-hidden />
       </span>
       <span className="font-serif text-xl font-semibold tracking-tight text-[#f4e9d4]">
@@ -284,7 +284,7 @@ export function AuthView({ mode }: AuthViewProps) {
     'h-11 rounded-md border-[#d4a548]/25 bg-white/[0.05] text-[#f4e9d4] placeholder:text-[#c9b58f]/50 focus-visible:border-[#d4a548]/60 focus-visible:ring-[#d4a548]/25 dark:bg-white/[0.05]';
 
   return (
-    <div className="relative min-h-screen overflow-x-clip bg-[#04120b]">
+    <div className="relative min-h-screen overflow-x-clip bg-[#120722]">
       <AuthScene mode={mode} />
 
       <div className="relative z-10 grid min-h-screen lg:grid-cols-2">
@@ -351,7 +351,7 @@ export function AuthView({ mode }: AuthViewProps) {
                   onMouseMove={onCardMove}
                   onMouseLeave={onCardLeave}
                 >
-                  <Card className="relative min-h-[520px] justify-center gap-4 overflow-hidden border-[#d4a548]/25 bg-[#06170f]/85 py-8 text-[#f4e9d4] shadow-[0_40px_90px_-30px_rgba(0,0,0,0.85)] backdrop-blur-xl sm:py-10">
+                  <Card className="relative min-h-[520px] justify-center gap-4 overflow-hidden border-[#d4a548]/25 bg-[#170b2e]/85 py-8 text-[#f4e9d4] shadow-[0_40px_90px_-30px_rgba(0,0,0,0.85)] backdrop-blur-xl sm:py-10">
                     <span
                       className="absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-[#d4a548]/60 to-transparent"
                       aria-hidden
@@ -362,7 +362,7 @@ export function AuthView({ mode }: AuthViewProps) {
                       </div>
                       {!isRegister && (
                         <span
-                          className="flex h-12 w-12 items-center justify-center rounded-full border border-[#d4a548]/40 bg-gradient-to-br from-[#0f3d26]/70 to-[#081a10]/70 shadow-[inset_0_0_20px_rgba(212,165,72,0.15)]"
+                          className="flex h-12 w-12 items-center justify-center rounded-full border border-[#d4a548]/40 bg-gradient-to-br from-[#331a5c]/70 to-[#1d0d38]/70 shadow-[inset_0_0_20px_rgba(212,165,72,0.15)]"
                           aria-hidden
                         >
                           <KeyRound className="h-6 w-6 text-[#e9c876]" strokeWidth={1.75} />
@@ -497,7 +497,7 @@ export function AuthView({ mode }: AuthViewProps) {
                           type="submit"
                           loading={submitting}
                           loadingText={copy.loading}
-                          className="h-11 w-full rounded-md border border-[#d4a548]/40 bg-gradient-to-b from-[#157347] to-[#0d5030] text-base text-[#f8ecd7] shadow-[0_10px_30px_-12px_rgba(212,165,72,0.5)] transition-all duration-200 hover:-translate-y-0.5 hover:from-[#1a8a55] hover:to-[#11633c] hover:shadow-[0_16px_40px_-12px_rgba(212,165,72,0.55)]"
+                          className="h-11 w-full rounded-md border border-[#d4a548]/40 bg-gradient-to-b from-[#7c3aed] to-[#5b21b6] text-base text-[#f8ecd7] shadow-[0_10px_30px_-12px_rgba(212,165,72,0.5)] transition-all duration-200 hover:-translate-y-0.5 hover:from-[#8b5cf6] hover:to-[#6d28d9] hover:shadow-[0_16px_40px_-12px_rgba(212,165,72,0.55)]"
                         >
                           {copy.submit}
                         </LoadingButton>

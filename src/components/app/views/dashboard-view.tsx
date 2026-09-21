@@ -175,7 +175,7 @@ function ResumeCard({
       </CardHeader>
       <CardContent className="mt-auto flex flex-wrap items-center gap-2">
         {resume.targetRole ? (
-          <Badge variant="secondary" className="bg-teal-50 text-teal-800 dark:bg-teal-950 dark:text-teal-300">
+          <Badge variant="secondary" className="bg-violet-50 text-violet-800 dark:bg-violet-950 dark:text-violet-300">
             {resume.targetRole}
           </Badge>
         ) : (
@@ -312,7 +312,7 @@ export function DashboardView({ section }: { section: 'overview' | 'resumes' }) 
                   <Tilt3D className="h-full" max={4}>
                     <Card className="h-full">
                       <CardContent className="flex items-center gap-4 p-5">
-                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-300">
+                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-violet-50 text-violet-700 dark:bg-violet-950 dark:text-violet-300">
                           <Icon className="h-5 w-5" aria-hidden />
                         </span>
                         <div>
@@ -336,7 +336,7 @@ export function DashboardView({ section }: { section: 'overview' | 'resumes' }) 
                   onClick={() => navigate('analyzer')}
                   className="group flex min-h-[44px] w-full items-center gap-4 rounded-xl border bg-card p-5 text-left transition-all hover:-translate-y-0.5 hover:shadow-md"
                 >
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-teal-600 text-white transition-transform duration-300 group-hover:-rotate-3 group-hover:scale-110">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-violet-600 text-white transition-transform duration-300 group-hover:-rotate-3 group-hover:scale-110">
                     <ScanSearch className="h-5 w-5" aria-hidden />
                   </span>
                   <span>
@@ -353,7 +353,7 @@ export function DashboardView({ section }: { section: 'overview' | 'resumes' }) 
                   onClick={() => navigate('jobmatch')}
                   className="group flex min-h-[44px] w-full items-center gap-4 rounded-xl border bg-card p-5 text-left transition-all hover:-translate-y-0.5 hover:shadow-md"
                 >
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white transition-transform duration-300 group-hover:-rotate-3 group-hover:scale-110">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-purple-600 text-white transition-transform duration-300 group-hover:-rotate-3 group-hover:scale-110">
                     <BriefcaseBusiness className="h-5 w-5" aria-hidden />
                   </span>
                   <span>
@@ -453,7 +453,7 @@ function EmptyResumes({ onCreate }: { onCreate: () => void }) {
     <Card className="border-dashed">
       <CardContent className="flex flex-col items-center justify-center gap-4 py-14 text-center">
         <Float3D duration={5}>
-          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-50 text-teal-600 shadow-lg shadow-teal-600/10 dark:bg-teal-950 dark:text-teal-300">
+          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-50 text-violet-600 shadow-lg shadow-violet-600/10 dark:bg-violet-950 dark:text-violet-300">
             <FolderOpen className="h-7 w-7" aria-hidden />
           </span>
         </Float3D>

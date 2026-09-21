@@ -146,25 +146,25 @@ function ResumePaperMockup() {
   return (
     <div className="relative mx-auto w-full max-w-sm" aria-hidden>
       {/* Paper */}
-      <div className="relative rounded-xl border border-[#d4a548]/30 bg-card p-6 shadow-2xl shadow-[#0d5030]/10 sm:p-7 dark:border-border">
+      <div className="relative rounded-xl border border-[#d4a548]/30 bg-card p-6 shadow-2xl shadow-[#4c1d95]/10 sm:p-7 dark:border-border">
         <div className="h-4 w-36 rounded-full bg-foreground/80" />
         <div className="mt-2.5 h-2.5 w-44 rounded-full bg-muted-foreground/40" />
         <div className="mt-5 h-px w-full bg-border" />
 
-        <div className="mt-5 h-2.5 w-16 rounded-full bg-[#136b43]/80" />
+        <div className="mt-5 h-2.5 w-16 rounded-full bg-[#6d28d9]/80" />
         <div className="mt-3 space-y-2">
           <div className="h-2 w-full rounded-full bg-muted" />
           <div className="h-2 w-11/12 rounded-full bg-muted" />
           <div className="h-2 w-3/4 rounded-full bg-muted" />
         </div>
 
-        <div className="mt-5 h-2.5 w-20 rounded-full bg-[#136b43]/80" />
+        <div className="mt-5 h-2.5 w-20 rounded-full bg-[#6d28d9]/80" />
         <div className="mt-3 space-y-2">
           <div className="h-2 w-full rounded-full bg-muted" />
           <div className="h-2 w-5/6 rounded-full bg-muted" />
         </div>
 
-        <div className="mt-5 h-2.5 w-14 rounded-full bg-[#136b43]/80" />
+        <div className="mt-5 h-2.5 w-14 rounded-full bg-[#6d28d9]/80" />
         <div className="mt-3 flex flex-wrap gap-2">
           <div className="h-6 w-14 rounded-full bg-[#8a6d1f]/15" />
           <div className="h-6 w-20 rounded-full bg-[#8a6d1f]/15" />
@@ -176,7 +176,7 @@ function ResumePaperMockup() {
 
       {/* Floating badges */}
       <FloatBadge className="absolute -top-5 -left-1 sm:-left-8" duration={5.5}>
-        <span className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-[#0f6b45] px-3 py-1.5 text-xs font-semibold text-white shadow-lg shadow-[#0d5030]/30">
+        <span className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-[#6d28d9] px-3 py-1.5 text-xs font-semibold text-white shadow-lg shadow-[#4c1d95]/30">
           <Gauge className="h-3.5 w-3.5" />
           AI Estimated ATS Score 87
         </span>
@@ -247,10 +247,10 @@ export function LandingView() {
         {/* ── Hero ─────────────────────────────────────────────── */}
         <section
           aria-labelledby="hero-heading"
-          className="relative overflow-hidden bg-gradient-to-b from-[#f5efdc] via-[#f2edda] to-[#fbf8f0] dark:from-teal-950/20 dark:via-emerald-950/10 dark:to-background"
+          className="relative overflow-hidden bg-gradient-to-b from-[#f5efdc] via-[#f2edda] to-[#fbf8f0] dark:from-violet-950/20 dark:via-purple-950/10 dark:to-background"
         >
           <div className="pointer-events-none absolute -top-24 -right-24 h-72 w-72 rounded-full bg-[#d4a548]/30 blur-3xl dark:bg-[#d4a548]/10" aria-hidden />
-          <div className="pointer-events-none absolute -bottom-32 -left-24 h-72 w-72 rounded-full bg-emerald-500/15 blur-3xl dark:bg-emerald-500/10" aria-hidden />
+          <div className="pointer-events-none absolute -bottom-32 -left-24 h-72 w-72 rounded-full bg-violet-500/15 blur-3xl dark:bg-violet-500/10" aria-hidden />
 
           {/* Floating 3D glass cubes, resume sheets and gold dust */}
           <HeroScene />
@@ -264,7 +264,7 @@ export function LandingView() {
 
               <h1 id="hero-heading" className="mt-6 text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
                 Build an{' '}
-                <span className="bg-gradient-to-r from-[#0b4d34] via-[#11633c] to-[#9a7a26] bg-clip-text text-transparent dark:from-emerald-300 dark:via-emerald-400 dark:to-[#d4a548]">
+                <span className="bg-gradient-to-r from-[#4a1d6e] via-[#6d28d9] to-[#9a7a26] bg-clip-text text-transparent dark:from-violet-300 dark:via-violet-400 dark:to-[#d4a548]">
                   ATS-Friendly
                 </span>{' '}
                 Resume with AI
@@ -280,7 +280,7 @@ export function LandingView() {
                 <Button
                   size="lg"
                   onClick={() => navigate('register')}
-                  className="h-12 bg-[#0f6b45] px-8 text-base text-white shadow-lg shadow-[#0d5030]/30 hover:bg-[#0d5c3f] dark:bg-[#136b43] dark:text-white dark:hover:bg-[#157a4e]"
+                  className="h-12 bg-[#6d28d9] px-8 text-base text-white shadow-lg shadow-[#4c1d95]/30 hover:bg-[#5b21b6] dark:bg-[#7c3aed] dark:text-white dark:hover:bg-[#8b5cf6]"
                 >
                   Create Resume
                   <ArrowRight aria-hidden />
@@ -323,7 +323,7 @@ export function LandingView() {
                   <Tilt3D className="h-full" max={5}>
                     <Card className="h-full transition-shadow hover:shadow-md">
                       <CardHeader>
-                        <div className="flex size-11 items-center justify-center rounded-lg bg-[#f3ead2] text-[#8a6d1f] ring-1 ring-[#d4a548]/35 dark:bg-[#d4a548]/10 dark:text-[#d9b95c] dark:ring-[#d4a548]/25">
+                        <div className="flex size-11 items-center justify-center rounded-lg bg-[#f0eafb] text-[#6d28d9] ring-1 ring-[#a78bfa]/40 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-400/25">
                           <feature.icon className="size-5" aria-hidden />
                         </div>
                         <CardTitle className="text-base">{feature.title}</CardTitle>
@@ -367,7 +367,7 @@ export function LandingView() {
                   <li key={step.title}>
                     <FadeUp delay={index * 0.1}>
                       <div className="relative flex flex-col items-center gap-3 text-center">
-                        <span className="z-10 flex size-12 items-center justify-center rounded-full bg-gradient-to-br from-[#136b43] to-[#0d5030] text-base font-semibold text-white shadow-md shadow-[#0d5030]/30 ring-4 ring-[#f6f1e1] dark:ring-background">
+                        <span className="z-10 flex size-12 items-center justify-center rounded-full bg-gradient-to-br from-[#6d28d9] to-[#4c1d95] text-base font-semibold text-white shadow-md shadow-[#4c1d95]/30 ring-4 ring-[#f6f1e1] dark:ring-background">
                           {index + 1}
                         </span>
                         <h3 className="font-semibold">{step.title}</h3>
@@ -401,7 +401,7 @@ export function LandingView() {
                   {BENEFITS.map((benefit) => (
                     <li key={benefit} className="flex items-start gap-3">
                       <CheckCircle2
-                        className="mt-0.5 size-5 shrink-0 text-[#136b43] dark:text-emerald-400"
+                        className="mt-0.5 size-5 shrink-0 text-[#6d28d9] dark:text-violet-400"
                         aria-hidden
                       />
                       <span className="text-sm leading-relaxed sm:text-base">{benefit}</span>
@@ -416,7 +416,7 @@ export function LandingView() {
         {/* ── Final CTA ────────────────────────────────────────── */}
         <section aria-labelledby="cta-heading" className="px-4 pb-16 sm:px-6 lg:px-8 lg:pb-24">
           <FadeUp className="mx-auto max-w-5xl">
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0d5030] via-[#11633c] to-[#136b43] px-6 py-12 text-center shadow-xl shadow-[#0a3d25]/30 sm:px-12 lg:py-16">
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#3b1163] via-[#4c1d95] to-[#6d28d9] px-6 py-12 text-center shadow-xl shadow-[#2a0a4a]/30 sm:px-12 lg:py-16">
               <div className="pointer-events-none absolute -top-20 -right-20 h-64 w-64 rounded-full bg-white/10 blur-2xl" aria-hidden />
               <div className="pointer-events-none absolute -bottom-24 -left-16 h-64 w-64 rounded-full bg-[#d4a548]/25 blur-2xl" aria-hidden />
 
@@ -424,13 +424,13 @@ export function LandingView() {
                 <h2 id="cta-heading" className="text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-4xl">
                   Ready to land more interviews?
                 </h2>
-                <p className="mx-auto mt-3 max-w-xl text-sm text-emerald-50 sm:text-base">
+                <p className="mx-auto mt-3 max-w-xl text-sm text-violet-50 sm:text-base">
                   Create your free account and build an ATS-friendly resume today.
                 </p>
                 <Button
                   size="lg"
                   onClick={() => navigate('register')}
-                  className="mt-8 h-12 bg-white px-8 text-base font-semibold text-[#0d5030] hover:bg-[#f3efdf]"
+                  className="mt-8 h-12 bg-white px-8 text-base font-semibold text-[#3b1163] hover:bg-[#f3efdf]"
                 >
                   Create Resume
                   <ArrowRight aria-hidden />
