@@ -211,3 +211,19 @@ Stage Summary:
 - New/rewritten artifacts: src/components/app/landing/hero-scene.tsx (3D glass resume centerpiece), src/components/app/views/landing-view.tsx (Midnight Glass page).
 - Design system notes for future tasks: glass = border-white/[0.07] + bg-white/[0.03-0.055] + backdrop-blur-xl + top sheen line; palette violet/fuchsia/cyan + amber accents on #04050d; hero copy strings are user-specified verbatim — do not reword.
 - Screenshots: /home/z/my-project/shots/feat7-*.png
+---
+Task ID: feat-8
+Agent: main (Z.ai Code)
+Task: Auth pages redesign — premium 3D glassmorphism AI style + rebrand to "Resume Recreate Agent AI" (auth logic untouched)
+
+Work Log:
+- Rebrand: logo.tsx wordmark now renders "ResumeRecreate Agent AI" (global: landing nav/footer + app shell); auth-view BrandLockup rebuilt with glass icon chip + violet→cyan gradient "Recreate" + "Agent AI" (whitespace-nowrap, text-base→sm:text-xl to avoid orphan wrap at 390px). No "Resume Recreate AI" remains on auth pages; all other full-name references in src were already correct.
+- Rewrote auth-scene.tsx as "Neural Nexus": navy/black base (#070b18→#04050d) with violet/cyan/blue aurora orbs, futuristic dot grid, 20-node neural constellation (SVG lines non-scaling-stroke, 2-tone cyan/indigo) + pulsing HTML nodes, drifting 4-color particles, rotating glass cubes (white/violet/cyan faces), 2 satellite GlassRings with orbit dots, dark-glass floating resume sheets, "Neural scan active" HUD chip, and the login-only AI Core emblem (BrainCircuit orb + orbiting satellite, replaces the classical wax seal). Parallax layer system + reduced-motion skip preserved.
+- Restyled auth-view.tsx presentation only (all logic byte-identical: state, validate(), handleSubmit, LAST_EMAIL_KEY prefill, password toggle, store calls, navigate, toasts, AnimatePresence 3D flip): bg #04050d; left showcase → sans type, HUD corner frames, cyan overlines, gradient em word ("again" / new "Where intelligence meets your career."), glass feature chips, GlowDivider; card → floating glass (border-white/10, bg-white/[0.05], backdrop-blur-2xl, rounded-2xl, min-h preserved) with animated violet/fuchsia/cyan outer glow, top sheen, slow diagonal light sweep, suspended y-bob added to the tilt layer; inputs/labels/links recolored to slate/cyan/violet; submit → violet→fuchsia→blue gradient with glow; classical copy toned to AI SaaS ("The AI Career Studio", "Print-ready, recruiter-friendly files.").
+- Verification (agent-browser): desktop login + register (1440×900) render with neural scene + glass card; empty register submit → inline validation errors (name/email/password required) confirmed; real login carol-no-cookie@example.com → #/dashboard with data (regression pass); mobile 390×844 login + register clean after wordmark fix; landing logo shows "Agent"; zero page errors; console clean; dev.log clean; bunx eslint clean; tsc clean for app src.
+
+Stage Summary:
+- Auth pages now match the landing's Midnight-Glass AI SaaS identity; brand is consistently "Resume Recreate Agent AI" across logo, auth lockup, landing and metadata. Authentication functionality untouched.
+- Artifacts: src/components/app/auth/auth-scene.tsx (rewritten), src/components/app/views/auth-view.tsx (restyle, logic preserved), src/components/app/logo.tsx (+Agent).
+- Note for future agents: hero/auth copy strings user-approved — do not reword; auth mode flip + tilt + bob stack via nested motion.divs (do not merge onto one element).
+- Screenshots: /home/z/my-project/shots/feat8-*.png

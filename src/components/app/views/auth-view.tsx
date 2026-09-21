@@ -1,12 +1,14 @@
 'use client';
 
 /**
- * Login / Register view — "Royal Amethyst & Champagne" classical edition.
- * A dark, ornamental 3D scene (see auth-scene.tsx) behind a glass form card
- * that tilts with the pointer and flips in 3D when switching modes.
- * The sign-in page gets its own identity: a dedicated wax-seal emblem in the
- * scene, a returning-guest showcase panel and a remembered-email welcome.
- * All form logic, validation and accessibility wiring is unchanged.
+ * Login / Register view — "Midnight Glass" AI SaaS edition.
+ * A dark, futuristic neural-network scene (see auth-scene.tsx) behind a
+ * floating 3D glass form card: deep backdrop blur, glass reflections, a
+ * soft animated outer glow, pointer tilt and a 3D flip when switching
+ * modes — visually consistent with the landing page.
+ * The sign-in page keeps its own identity: a dedicated AI-core emblem in
+ * the scene, a returning-guest showcase panel and a remembered-email
+ * welcome. All form logic, validation and accessibility wiring is unchanged.
  */
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
@@ -40,7 +42,7 @@ const LAST_EMAIL_KEY = 'rra_last_email';
 
 const COPY = {
   login: {
-    overline: 'The Classical Career Studio',
+    overline: 'The AI Career Studio',
     heading: 'Welcome back',
     subtext: 'Sign in to keep building, scoring and matching your resumes.',
     submit: 'Sign in',
@@ -74,8 +76,8 @@ const SHOWCASE = {
   },
   register: {
     overline: 'Your Next Chapter Begins',
-    headingA: 'Where timeless',
-    headingEm: 'elegance',
+    headingA: 'Where',
+    headingEm: 'intelligence',
     headingB: ' meets your career.',
     subtext:
       'Create your account to polish every bullet with AI, score your ATS readiness and match yourself to the roles you deserve — all in one refined studio.',
@@ -122,33 +124,36 @@ const FEATURES: Record<'login' | 'register', Feature[]> = {
     {
       icon: FileDown,
       title: 'PDF & LaTeX exports',
-      text: 'Print-ready files with classical typography.',
+      text: 'Print-ready, recruiter-friendly files.',
     },
   ],
 };
 
-/** Gold-accented brand lockup for the classical scene. */
+/** Violet/cyan-accented brand lockup for the AI scene. */
 function BrandLockup() {
   return (
     <span className="inline-flex items-center gap-3">
-      <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#d4a548]/50 bg-gradient-to-br from-[#5b2a91] to-[#2e1450] shadow-[0_8px_24px_-8px_rgba(212,165,72,0.45)]">
-        <FileText className="h-6 w-6 text-[#e9c876]" strokeWidth={2} aria-hidden />
+      <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-gradient-to-br from-violet-600/40 to-blue-600/20 shadow-[0_8px_30px_-8px_rgba(139,92,246,0.65)] backdrop-blur-xl">
+        <FileText className="h-6 w-6 text-violet-200" strokeWidth={2} aria-hidden />
       </span>
-      <span className="font-serif text-xl font-semibold tracking-tight text-[#f4e9d4]">
-        Resume<span className="italic text-[#e9c876]">Recreate</span>
-        <span className="text-[#c9b58f]"> AI</span>
+      <span className="whitespace-nowrap text-base font-semibold tracking-tight text-white sm:text-xl">
+        Resume
+        <span className="bg-gradient-to-r from-violet-300 to-cyan-300 bg-clip-text text-transparent">
+          Recreate
+        </span>{' '}
+        Agent<span className="text-slate-400"> AI</span>
       </span>
     </span>
   );
 }
 
-/** Small gold ornamental divider (— ◆ —). */
-function OrnamentDivider() {
+/** Subtle glowing divider (— ◆ —) with a cyan spark. */
+function GlowDivider() {
   return (
     <div className="flex items-center gap-3" aria-hidden>
-      <span className="h-px flex-1 bg-gradient-to-r from-transparent to-[#d4a548]/50" />
-      <span className="h-1.5 w-1.5 rotate-45 bg-[#d4a548]/80" />
-      <span className="h-px flex-1 bg-gradient-to-l from-transparent to-[#d4a548]/50" />
+      <span className="h-px flex-1 bg-gradient-to-r from-transparent to-violet-400/50" />
+      <span className="h-1.5 w-1.5 rotate-45 bg-gradient-to-br from-cyan-300 to-violet-400 shadow-[0_0_10px_rgba(34,211,238,0.6)]" />
+      <span className="h-px flex-1 bg-gradient-to-l from-transparent to-violet-400/50" />
     </div>
   );
 }
@@ -281,60 +286,62 @@ export function AuthView({ mode }: AuthViewProps) {
   }
 
   const inputClass =
-    'h-11 rounded-md border-[#d4a548]/25 bg-white/[0.05] text-[#f4e9d4] placeholder:text-[#c9b58f]/50 focus-visible:border-[#d4a548]/60 focus-visible:ring-[#d4a548]/25 dark:bg-white/[0.05]';
+    'h-11 rounded-md border-white/10 bg-white/[0.06] text-slate-100 placeholder:text-slate-500 focus-visible:border-violet-400/60 focus-visible:ring-violet-400/25';
 
   return (
-    <div className="relative min-h-screen overflow-x-clip bg-[#120722]">
+    <div className="relative min-h-screen overflow-x-clip bg-[#04050d]">
       <AuthScene mode={mode} />
 
       <div className="relative z-10 grid min-h-screen lg:grid-cols-2">
-        {/* ── Left: classical brand showcase (desktop) ─────────────────── */}
+        {/* ── Left: AI brand showcase (desktop) ───────────────────────── */}
         <aside
           className="relative hidden flex-col justify-center px-12 py-16 xl:px-20 lg:flex"
           aria-label="About Resume Recreate Agent AI"
         >
-          {/* ornamental corner frames */}
-          <span className="absolute left-8 top-8 h-6 w-6 border-l-2 border-t-2 border-[#d4a548]/40" aria-hidden />
-          <span className="absolute right-8 top-8 h-6 w-6 border-r-2 border-t-2 border-[#d4a548]/40" aria-hidden />
-          <span className="absolute bottom-8 left-8 h-6 w-6 border-b-2 border-l-2 border-[#d4a548]/40" aria-hidden />
-          <span className="absolute bottom-8 right-8 h-6 w-6 border-b-2 border-r-2 border-[#d4a548]/40" aria-hidden />
+          {/* HUD corner frames */}
+          <span className="absolute left-8 top-8 h-6 w-6 border-l-2 border-t-2 border-cyan-300/30" aria-hidden />
+          <span className="absolute right-8 top-8 h-6 w-6 border-r-2 border-t-2 border-cyan-300/30" aria-hidden />
+          <span className="absolute bottom-8 left-8 h-6 w-6 border-b-2 border-l-2 border-cyan-300/30" aria-hidden />
+          <span className="absolute bottom-8 right-8 h-6 w-6 border-b-2 border-r-2 border-cyan-300/30" aria-hidden />
 
           <div className="max-w-lg">
             <BrandLockup />
 
-            <p className="mt-10 text-[11px] font-medium uppercase tracking-[0.35em] text-[#d4a548]">
+            <p className="mt-10 text-[11px] font-medium uppercase tracking-[0.35em] text-cyan-300/90">
               {showcase.overline}
             </p>
-            <h1 className="mt-4 min-h-[10rem] font-serif text-5xl font-bold leading-[1.08] tracking-tight text-[#f4e9d4]">
+            <h1 className="mt-4 min-h-[10rem] text-5xl font-bold leading-[1.08] tracking-tight text-white">
               {showcase.headingA}{' '}
-              <span className="bg-gradient-to-br from-[#f1dc9a] via-[#d4a548] to-[#a87c2e] bg-clip-text italic text-transparent">
+              <span className="bg-gradient-to-r from-violet-300 via-fuchsia-300 to-cyan-300 bg-clip-text text-transparent">
                 {showcase.headingEm}
               </span>
               {showcase.headingB}
             </h1>
-            <p className="mt-5 leading-relaxed text-[#c9b58f]">{showcase.subtext}</p>
+            <p className="mt-5 leading-relaxed text-slate-400">{showcase.subtext}</p>
 
             <ul className="mt-10 space-y-5">
               {FEATURES[mode].map((feature) => (
                 <li key={feature.title} className="flex items-start gap-4">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#d4a548]/35 bg-white/[0.03]">
-                    <feature.icon className="h-5 w-5 text-[#e9c876]" aria-hidden />
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.05] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl">
+                    <feature.icon className="h-5 w-5 text-cyan-300" aria-hidden />
                   </span>
                   <span>
-                    <span className="block font-medium text-[#f4e9d4]">{feature.title}</span>
-                    <span className="block text-sm text-[#c9b58f]">{feature.text}</span>
+                    <span className="block font-medium text-slate-100">{feature.title}</span>
+                    <span className="block text-sm text-slate-400">{feature.text}</span>
                   </span>
                 </li>
               ))}
             </ul>
 
-            <OrnamentDivider />
+            <div className="mt-10">
+              <GlowDivider />
+            </div>
 
-            <p className="mt-6 font-serif text-lg italic text-[#c9b58f]">{showcase.quote}</p>
+            <p className="mt-6 text-lg italic text-slate-400">{showcase.quote}</p>
           </div>
         </aside>
 
-        {/* ── Right: the form card ─────────────────────────────────────── */}
+        {/* ── Right: the floating 3D glass form card ──────────────────── */}
         <main className="flex items-center justify-center px-4 py-10 sm:px-8">
           <div className="w-full max-w-md [perspective:1600px]">
             <AnimatePresence mode="wait" initial={false}>
@@ -348,172 +355,193 @@ export function AuthView({ mode }: AuthViewProps) {
               >
                 <motion.div
                   style={reduced ? undefined : { rotateX: tiltX, rotateY: tiltY, transformStyle: 'preserve-3d' }}
+                  animate={reduced ? undefined : { y: [0, -8, 0] }}
+                  transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
                   onMouseMove={onCardMove}
                   onMouseLeave={onCardLeave}
                 >
-                  <Card className="relative min-h-[520px] justify-center gap-4 overflow-hidden border-[#d4a548]/25 bg-[#170b2e]/85 py-8 text-[#f4e9d4] shadow-[0_40px_90px_-30px_rgba(0,0,0,0.85)] backdrop-blur-xl sm:py-10">
-                    <span
-                      className="absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-[#d4a548]/60 to-transparent"
+                  <div className="relative">
+                    {/* Soft animated outer glow — the card floats in light */}
+                    <motion.div
+                      className="absolute -inset-5 rounded-[2rem] bg-gradient-to-r from-violet-600/25 via-fuchsia-600/15 to-cyan-500/20 blur-2xl"
+                      animate={reduced ? undefined : { opacity: [0.55, 0.95, 0.55] }}
+                      transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
                       aria-hidden
                     />
-                    <CardHeader className="justify-items-center text-center">
-                      <div className="lg:hidden">
-                        <BrandLockup />
-                      </div>
-                      {!isRegister && (
-                        <span
-                          className="flex h-12 w-12 items-center justify-center rounded-full border border-[#d4a548]/40 bg-gradient-to-br from-[#331a5c]/70 to-[#1d0d38]/70 shadow-[inset_0_0_20px_rgba(212,165,72,0.15)]"
-                          aria-hidden
-                        >
-                          <KeyRound className="h-6 w-6 text-[#e9c876]" strokeWidth={1.75} />
-                        </span>
-                      )}
-                      <p className="mt-2 text-[11px] font-medium uppercase tracking-[0.35em] text-[#d4a548]">
-                        {copy.overline}
-                      </p>
-                      <CardTitle className="font-serif text-3xl font-bold tracking-tight text-[#f4e9d4]">
-                        {copy.heading}
-                      </CardTitle>
-                      <div className="w-40">
-                        <OrnamentDivider />
-                      </div>
-                      <CardDescription className="max-w-xs leading-relaxed text-[#c9b58f]">
-                        {copy.subtext}
-                      </CardDescription>
-                    </CardHeader>
 
-                    <CardContent>
-                      {apiError && (
-                        <Alert
-                          variant="destructive"
-                          className="mb-6 border-red-400/30 bg-red-500/10 text-red-200 [&>svg]:text-red-300"
-                        >
-                          <AlertCircle aria-hidden />
-                          <AlertTitle>{copy.errorTitle}</AlertTitle>
-                          <AlertDescription className="text-red-200/80">{apiError}</AlertDescription>
-                        </Alert>
-                      )}
+                    <Card className="relative min-h-[520px] justify-center gap-4 overflow-hidden rounded-2xl border-white/10 bg-white/[0.05] py-8 text-slate-100 shadow-[0_40px_100px_-30px_rgba(76,29,149,0.6)] backdrop-blur-2xl sm:py-10">
+                      {/* glass top-edge reflection */}
+                      <span
+                        className="absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent"
+                        aria-hidden
+                      />
+                      {/* slow diagonal light sweep across the glass */}
+                      <motion.span
+                        className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.04] to-transparent"
+                        animate={reduced ? undefined : { x: ['-45%', '45%'] }}
+                        transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
+                        aria-hidden
+                      />
 
-                      <form onSubmit={handleSubmit} noValidate className="space-y-5">
-                        {isRegister && (
+                      <CardHeader className="justify-items-center text-center">
+                        <div className="lg:hidden">
+                          <BrandLockup />
+                        </div>
+                        {!isRegister && (
+                          <span
+                            className="flex h-12 w-12 items-center justify-center rounded-full border border-cyan-300/30 bg-gradient-to-br from-violet-600/25 to-blue-600/15 shadow-[inset_0_0_20px_rgba(56,189,248,0.15)]"
+                            aria-hidden
+                          >
+                            <KeyRound className="h-6 w-6 text-cyan-200" strokeWidth={1.75} />
+                          </span>
+                        )}
+                        <p className="mt-2 text-[11px] font-medium uppercase tracking-[0.35em] text-cyan-300/90">
+                          {copy.overline}
+                        </p>
+                        <CardTitle className="text-3xl font-bold tracking-tight text-white">
+                          {copy.heading}
+                        </CardTitle>
+                        <div className="w-40">
+                          <GlowDivider />
+                        </div>
+                        <CardDescription className="max-w-xs leading-relaxed text-slate-400">
+                          {copy.subtext}
+                        </CardDescription>
+                      </CardHeader>
+
+                      <CardContent>
+                        {apiError && (
+                          <Alert
+                            variant="destructive"
+                            className="mb-6 border-red-400/30 bg-red-500/10 text-red-200 [&>svg]:text-red-300"
+                          >
+                            <AlertCircle aria-hidden />
+                            <AlertTitle>{copy.errorTitle}</AlertTitle>
+                            <AlertDescription className="text-red-200/80">{apiError}</AlertDescription>
+                          </Alert>
+                        )}
+
+                        <form onSubmit={handleSubmit} noValidate className="space-y-5">
+                          {isRegister && (
+                            <div className="space-y-2">
+                              <Label htmlFor="name" className="text-slate-300">
+                                Full name
+                              </Label>
+                              <Input
+                                id="name"
+                                name="name"
+                                type="text"
+                                autoComplete="name"
+                                placeholder="Ada Lovelace"
+                                value={name}
+                                onChange={(event) => {
+                                  setName(event.target.value);
+                                  clearFieldError('name');
+                                }}
+                                aria-invalid={Boolean(errors.name)}
+                                aria-describedby={errors.name ? 'name-error' : undefined}
+                                className={inputClass}
+                              />
+                              {errors.name && (
+                                <p id="name-error" className="text-sm text-red-300/90">
+                                  {errors.name}
+                                </p>
+                              )}
+                            </div>
+                          )}
+
                           <div className="space-y-2">
-                            <Label htmlFor="name" className="text-[#e2cfa8]">
-                              Full name
+                            <Label htmlFor="email" className="text-slate-300">
+                              Email
                             </Label>
                             <Input
-                              id="name"
-                              name="name"
-                              type="text"
-                              autoComplete="name"
-                              placeholder="Ada Lovelace"
-                              value={name}
+                              id="email"
+                              name="email"
+                              type="email"
+                              autoComplete="email"
+                              placeholder="you@example.com"
+                              value={email}
                               onChange={(event) => {
-                                setName(event.target.value);
-                                clearFieldError('name');
+                                setEmail(event.target.value);
+                                clearFieldError('email');
                               }}
-                              aria-invalid={Boolean(errors.name)}
-                              aria-describedby={errors.name ? 'name-error' : undefined}
+                              aria-invalid={Boolean(errors.email)}
+                              aria-describedby={errors.email ? 'email-error' : undefined}
                               className={inputClass}
                             />
-                            {errors.name && (
-                              <p id="name-error" className="text-sm text-red-300/90">
-                                {errors.name}
+                            {errors.email && (
+                              <p id="email-error" className="text-sm text-red-300/90">
+                                {errors.email}
+                              </p>
+                            )}
+                            {mode === 'login' && rememberedEmail && email === rememberedEmail && !errors.email && (
+                              <p className="flex items-center gap-1.5 text-xs text-cyan-300/90">
+                                <Sparkles className="h-3 w-3 shrink-0" aria-hidden />
+                                Welcome back — we kept your email handy.
                               </p>
                             )}
                           </div>
-                        )}
 
-                        <div className="space-y-2">
-                          <Label htmlFor="email" className="text-[#e2cfa8]">
-                            Email
-                          </Label>
-                          <Input
-                            id="email"
-                            name="email"
-                            type="email"
-                            autoComplete="email"
-                            placeholder="you@example.com"
-                            value={email}
-                            onChange={(event) => {
-                              setEmail(event.target.value);
-                              clearFieldError('email');
-                            }}
-                            aria-invalid={Boolean(errors.email)}
-                            aria-describedby={errors.email ? 'email-error' : undefined}
-                            className={inputClass}
-                          />
-                          {errors.email && (
-                            <p id="email-error" className="text-sm text-red-300/90">
-                              {errors.email}
-                            </p>
-                          )}
-                          {mode === 'login' && rememberedEmail && email === rememberedEmail && !errors.email && (
-                            <p className="flex items-center gap-1.5 text-xs text-[#d4a548]/85">
-                              <Sparkles className="h-3 w-3 shrink-0" aria-hidden />
-                              Welcome back — we kept your email handy.
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="password" className="text-[#e2cfa8]">
-                            Password
-                          </Label>
-                          <div className="relative">
-                            <Input
-                              id="password"
-                              name="password"
-                              type={showPassword ? 'text' : 'password'}
-                              autoComplete={isRegister ? 'new-password' : 'current-password'}
-                              placeholder={isRegister ? 'At least 8 characters' : 'Your password'}
-                              value={password}
-                              onChange={(event) => {
-                                setPassword(event.target.value);
-                                clearFieldError('password');
-                              }}
-                              aria-invalid={Boolean(errors.password)}
-                              aria-describedby={errors.password ? 'password-error' : undefined}
-                              className={inputClass + ' h-12 pr-12'}
-                            />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setShowPassword((visible) => !visible)}
-                              aria-label={showPassword ? 'Hide password' : 'Show password'}
-                              className="absolute right-0.5 top-1/2 size-11 -translate-y-1/2 text-[#c9b58f] hover:bg-white/5 hover:text-[#e9c876]"
-                            >
-                              {showPassword ? <EyeOff aria-hidden /> : <Eye aria-hidden />}
-                            </Button>
+                          <div className="space-y-2">
+                            <Label htmlFor="password" className="text-slate-300">
+                              Password
+                            </Label>
+                            <div className="relative">
+                              <Input
+                                id="password"
+                                name="password"
+                                type={showPassword ? 'text' : 'password'}
+                                autoComplete={isRegister ? 'new-password' : 'current-password'}
+                                placeholder={isRegister ? 'At least 8 characters' : 'Your password'}
+                                value={password}
+                                onChange={(event) => {
+                                  setPassword(event.target.value);
+                                  clearFieldError('password');
+                                }}
+                                aria-invalid={Boolean(errors.password)}
+                                aria-describedby={errors.password ? 'password-error' : undefined}
+                                className={inputClass + ' h-12 pr-12'}
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setShowPassword((visible) => !visible)}
+                                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                className="absolute right-0.5 top-1/2 size-11 -translate-y-1/2 text-slate-400 hover:bg-white/5 hover:text-cyan-200"
+                              >
+                                {showPassword ? <EyeOff aria-hidden /> : <Eye aria-hidden />}
+                              </Button>
+                            </div>
+                            {errors.password && (
+                              <p id="password-error" className="text-sm text-red-300/90">
+                                {errors.password}
+                              </p>
+                            )}
                           </div>
-                          {errors.password && (
-                            <p id="password-error" className="text-sm text-red-300/90">
-                              {errors.password}
-                            </p>
-                          )}
-                        </div>
 
-                        <LoadingButton
-                          type="submit"
-                          loading={submitting}
-                          loadingText={copy.loading}
-                          className="h-11 w-full rounded-md border border-[#d4a548]/40 bg-gradient-to-b from-[#7c3aed] to-[#5b21b6] text-base text-[#f8ecd7] shadow-[0_10px_30px_-12px_rgba(212,165,72,0.5)] transition-all duration-200 hover:-translate-y-0.5 hover:from-[#8b5cf6] hover:to-[#6d28d9] hover:shadow-[0_16px_40px_-12px_rgba(212,165,72,0.55)]"
-                        >
-                          {copy.submit}
-                        </LoadingButton>
-                      </form>
-                    </CardContent>
-                  </Card>
+                          <LoadingButton
+                            type="submit"
+                            loading={submitting}
+                            loadingText={copy.loading}
+                            className="h-11 w-full rounded-md bg-gradient-to-r from-violet-600 via-fuchsia-600 to-blue-600 text-base font-semibold text-white shadow-[0_10px_36px_-10px_rgba(139,92,246,0.7)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_48px_-12px_rgba(139,92,246,0.85)] hover:brightness-110"
+                          >
+                            {copy.submit}
+                          </LoadingButton>
+                        </form>
+                      </CardContent>
+                    </Card>
+                  </div>
                 </motion.div>
               </motion.div>
             </AnimatePresence>
 
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-1 text-sm text-[#c9b58f]">
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-1 text-sm text-slate-400">
               <span>{copy.switchPrompt}</span>
               <Button
                 variant="link"
                 onClick={() => navigate(isRegister ? 'login' : 'register')}
-                className="h-11 px-1 text-[#e9c876] hover:text-[#f4e0a6]"
+                className="h-11 px-1 text-cyan-300 hover:text-cyan-200"
               >
                 {copy.switchAction}
               </Button>
@@ -523,7 +551,7 @@ export function AuthView({ mode }: AuthViewProps) {
               <Button
                 variant="ghost"
                 onClick={() => navigate('landing')}
-                className="h-11 text-[#c9b58f] hover:bg-white/5 hover:text-[#f4e9d4]"
+                className="h-11 text-slate-400 hover:bg-white/5 hover:text-white"
               >
                 <ArrowLeft aria-hidden />
                 Back to home

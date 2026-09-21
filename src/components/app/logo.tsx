@@ -13,7 +13,7 @@ export function Logo({ className, size = 'md', light = false }: { className?: st
         <FileText className={icon} strokeWidth={2.2} />
       </span>
       <span className={cn('font-semibold tracking-tight', text, light ? 'text-white' : 'text-foreground')}>
-        Resume<span className="text-[#6d28d9] dark:text-violet-400">Recreate</span>
+        Resume<span className="text-[#6d28d9] dark:text-violet-400">Recreate</span> Agent
         <span className={light ? 'text-white/60' : 'text-muted-foreground'}> AI</span>
       </span>
     </span>
