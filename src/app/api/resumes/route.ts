@@ -1,7 +1,6 @@
 import { db } from '@/lib/db';
 import { ok, handleError, parseBody, requireUser } from '@/lib/api-helpers';
 import { createResumeSchema, sanitizeResumeData } from '@/lib/validation';
-import { logActivity } from '@/lib/activity';
 
 export async function GET() {
   try {
@@ -36,7 +35,6 @@ export async function POST(req: Request) {
       },
       select: { id: true, title: true, targetRole: true, template: true, createdAt: true, updatedAt: true },
     });
-    await logActivity(user.id, 'resume_created', `Created resume "${resume.title}"`);
     return ok({ resume }, 201);
   } catch (e) {
     return handleError(e);

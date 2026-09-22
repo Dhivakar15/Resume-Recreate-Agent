@@ -1,0 +1,638 @@
+     1→'use client';
+     2→
+     3→import { useCallback, useEffect, useRef, useState } from 'react';
+     4→import { toast } from 'sonner';
+     5→import { AppShell } from '@/components/app/app-shell';
+     6→import { LoadingButton } from '@/components/app/loading-button';
+     7→import { Float3D, Rise3D } from '@/components/app/three-d/motion';
+     8→import { apiFetch } from '@/lib/client/api';
+     9→import { navigate } from '@/lib/client/navigation';
+    10→import { useResumesStore } from '@/stores/resumes-store';
+    11→import { COVER_LETTER_TONES, type CoverLetterTone, type SavedCoverLetter } from '@/types/ai-tools';
+    12→import {
+    13→  AlertDialog,
+    14→  AlertDialogAction,
+    15→  AlertDialogCancel,
+    16→  AlertDialogContent,
+    17→  AlertDialogDescription,
+    18→  AlertDialogFooter,
+    19→  AlertDialogHeader,
+    20→  AlertDialogTitle,
+    21→} from '@/components/ui/alert-dialog';
+    22→import { Badge } from '@/components/ui/badge';
+    23→import { Button } from '@/components/ui/button';
+    24→import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+    25→import { Input } from '@/components/ui/input';
+    26→import { Label } from '@/components/ui/label';
+    27→import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+    28→import { Skeleton } from '@/components/ui/skeleton';
+    29→import { Textarea } from '@/components/ui/textarea';
+    30→import { Copy, Download, FilePlus2, FileText, Loader2, MailOpen, RefreshCw, Save, Sparkles, Trash2, Wand2 } from 'lucide-react';
+    31→import { cn } from '@/lib/utils';
+    32→
+    33→// ─── Midnight Glass recipes ──────────────────────────────────────────────────
+    34→
+    35→const GLASS = 'border border-white/[0.07] bg-white/[0.03] backdrop-blur-xl';
+    36→const INPUT_CLS = 'border-white/10 bg-white/[0.04] text-slate-100 placeholder:text-slate-600 dark:bg-white/[0.04]';
+    37→const OUTLINE_BTN = 'border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.08] hover:text-white min-h-[44px]';
+    38→const PRIMARY_BTN =
+    39→  'min-h-[44px] bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white hover:from-violet-500 hover:to-fuchsia-500';
+    40→
+    41→interface GenerationResult {
+    42→  letter: string;
+    43→  wordCount: number;
+    44→  tone: CoverLetterTone;
+    45→  resumeTitle: string;
+    46→}
+    47→
+    48→function timeAgo(iso: string): string {
+    49→  const diff = Date.now() - new Date(iso).getTime();
+    50→  const mins = Math.floor(diff / 60000);
+    51→  if (mins < 1) return 'just now';
+    52→  if (mins < 60) return `${mins}m ago`;
+    53→  const hours = Math.floor(mins / 60);
+    54→  if (hours < 24) return `${hours}h ago`;
+    55→  const days = Math.floor(hours / 24);
+    56→  if (days < 30) return `${days}d ago`;
+    57→  return new Date(iso).toLocaleDateString();
+    58→}
+    59→
+    60→function wordCount(text: string): number {
+    61→  const t = text.trim();
+    62→  return t ? t.split(/\s+/).length : 0;
+    63→}
+    64→
+    65→const TONE_BADGE: Record<string, string> = {
+    66→  professional: 'border-violet-400/30 bg-violet-500/15 text-violet-200',
+    67→  formal: 'border-cyan-400/30 bg-cyan-500/10 text-cyan-300',
+    68→  short: 'border-fuchsia-400/30 bg-fuchsia-500/10 text-fuchsia-300',
+    69→};
+    70→
+    71→/** AI Cover Letter Generator: compose, edit, save and reuse tailored letters. */
+    72→export function CoverLetterView() {
+    73→  const resumes = useResumesStore((s) => s.resumes);
+    74→  const resumesLoaded = useResumesStore((s) => s.loaded);
+    75→  const loadingResumes = useResumesStore((s) => s.loading);
+    76→  const fetchResumes = useResumesStore((s) => s.fetch);
+    77→
+    78→  // Form
+    79→  const [resumeId, setResumeId] = useState('');
+    80→  const [company, setCompany] = useState('');
+    81→  const [role, setRole] = useState('');
+    82→  const [jobDescription, setJobDescription] = useState('');
+    83→  const [tone, setTone] = useState<CoverLetterTone>('professional');
+    84→  const [companyError, setCompanyError] = useState<string | null>(null);
+    85→  const [roleError, setRoleError] = useState<string | null>(null);
+    86→
+    87→  // Generation + result panel
+    88→  const [generating, setGenerating] = useState(false);
+    89→  const [letterContent, setLetterContent] = useState('');
+    90→  const [savedId, setSavedId] = useState<string | null>(null);
+    91→  const [baseline, setBaseline] = useState<string | null>(null); // content when opened from a saved letter
+    92→  const [saving, setSaving] = useState(false);
+    93→
+    94→  // Saved letters
+    95→  const [letters, setLetters] = useState<SavedCoverLetter[]>([]);
+    96→  const [lettersLoading, setLettersLoading] = useState(true);
+    97→  const [lettersError, setLettersError] = useState<string | null>(null);
+    98→  const [deleteTarget, setDeleteTarget] = useState<SavedCoverLetter | null>(null);
+    99→  const [deleting, setDeleting] = useState(false);
+   100→
+   101→  const bootedRef = useRef(false);
+   102→
+   103→  const loadLetters = useCallback(async () => {
+   104→    setLettersLoading(true);
+   105→    setLettersError(null);
+   106→    try {
+   107→      const data = await apiFetch<{ letters: SavedCoverLetter[] }>('/api/cover-letters');
+   108→      setLetters(data.letters);
+   109→    } catch (e) {
+   110→      setLettersError((e as Error).message);
+   111→    } finally {
+   112→      setLettersLoading(false);
+   113→    }
+   114→  }, []);
+   115→
+   116→  useEffect(() => {
+   117→    if (bootedRef.current) return;
+   118→    bootedRef.current = true;
+   119→    fetchResumes(!useResumesStore.getState().loaded).catch((e: unknown) => toast.error((e as Error).message));
+   120→    void loadLetters();
+   121→  }, [fetchResumes, loadLetters]);
+   122→
+   123→  const noResumes = resumesLoaded && resumes.length === 0;
+   124→  const selectedResume = resumes.find((r) => r.id === resumeId) ?? null;
+   125→  const hasResult = letterContent.trim().length > 0;
+   126→
+   127→  const runGenerate = useCallback(async () => {
+   128→    if (generating || !selectedResume) return;
+   129→    const cErr = !company.trim() ? 'Company name is required.' : null;
+   130→    const rErr = !role.trim() ? 'Job role is required.' : null;
+   131→    setCompanyError(cErr);
+   132→    setRoleError(rErr);
+   133→    if (cErr || rErr) return;
+   134→    setGenerating(true);
+   135→    try {
+   136→      const result = await apiFetch<GenerationResult>('/api/ai/cover-letter', {
+   137→        method: 'POST',
+   138→        json: {
+   139→          resumeId: selectedResume.id,
+   140→          company: company.trim(),
+   141→          role: role.trim(),
+   142→          jobDescription: jobDescription.trim() || undefined,
+   143→          tone,
+   144→        },
+   145→      });
+   146→      setLetterContent(result.letter);
+   147→      setSavedId(null);
+   148→      setBaseline(null);
+   149→      toast.success(`Cover letter ready — ${result.wordCount} words.`);
+   150→    } catch (e) {
+   151→      toast.error((e as Error).message);
+   152→    } finally {
+   153→      setGenerating(false);
+   154→    }
+   155→  }, [company, generating, jobDescription, role, selectedResume, tone]);
+   156→
+   157→  const saveLetter = async () => {
+   158→    if (saving || !selectedResume || !hasResult) return;
+   159→    if (savedId && baseline !== null && letterContent === baseline) {
+   160→      toast.info('No changes since the last save.');
+   161→      return;
+   162→    }
+   163→    setSaving(true);
+   164→    try {
+   165→      if (savedId && baseline !== null) {
+   166→        // Content of an opened saved letter was edited → update in place.
+   167→        const { letter } = await apiFetch<{ letter: SavedCoverLetter }>(`/api/cover-letters/${savedId}`, {
+   168→          method: 'PUT',
+   169→          json: { content: letterContent },
+   170→        });
+   171→        setBaseline(letterContent);
+   172→        setLetters((ls) => ls.map((l) => (l.id === letter.id ? { ...l, content: letter.content, updatedAt: letter.updatedAt } : l)));
+   173→        toast.success('Updates saved to the existing letter.');
+   174→      } else {
+   175→        const { letter } = await apiFetch<{ letter: SavedCoverLetter }>('/api/cover-letters', {
+   176→          method: 'POST',
+   177→          json: { resumeId: selectedResume.id, company: company.trim(), role: role.trim(), tone, content: letterContent },
+   178→        });
+   179→        setLetters((ls) => [letter, ...ls]);
+   180→        setSavedId(letter.id);
+   181→        setBaseline(letterContent);
+   182→        toast.success('Cover letter saved.');
+   183→      }
+   184→    } catch (e) {
+   185→      toast.error((e as Error).message);
+   186→    } finally {
+   187→      setSaving(false);
+   188→    }
+   189→  };
+   190→
+   191→  const copyLetter = async () => {
+   192→    try {
+   193→      await navigator.clipboard.writeText(letterContent);
+   194→      toast.success('Copied to clipboard.');
+   195→    } catch {
+   196→      toast.error('Could not copy — please select the text and copy manually.');
+   197→    }
+   198→  };
+   199→
+   200→  const downloadLetter = () => {
+   201→    const blob = new Blob([letterContent], { type: 'text/plain;charset=utf-8' });
+   202→    const url = URL.createObjectURL(blob);
+   203→    const a = document.createElement('a');
+   204→    a.href = url;
+   205→    a.download = `cover-letter-${(company.trim() || 'draft').replace(/\s+/g, '-').toLowerCase()}.txt`;
+   206→    document.body.appendChild(a);
+   207→    a.click();
+   208→    a.remove();
+   209→    URL.revokeObjectURL(url);
+   210→    toast.success('Downloaded as .txt.');
+   211→  };
+   212→
+   213→  const openLetter = (l: SavedCoverLetter) => {
+   214→    setCompany(l.company);
+   215→    setRole(l.role);
+   216→    const letterTone = COVER_LETTER_TONES.find((t) => t.key === l.tone);
+   217→    if (letterTone) setTone(letterTone.key);
+   218→    if (l.resumeId && resumes.some((r) => r.id === l.resumeId)) setResumeId(l.resumeId);
+   219→    setLetterContent(l.content);
+   220→    setSavedId(l.id);
+   221→    setBaseline(l.content);
+   222→    window.scrollTo({ top: 0, behavior: 'smooth' });
+   223→  };
+   224→
+   225→  const confirmDelete = async () => {
+   226→    if (!deleteTarget || deleting) return;
+   227→    setDeleting(true);
+   228→    try {
+   229→      await apiFetch<{ success: boolean }>(`/api/cover-letters/${deleteTarget.id}`, { method: 'DELETE' });
+   230→      setLetters((ls) => ls.filter((l) => l.id !== deleteTarget.id));
+   231→      if (savedId === deleteTarget.id) {
+   232→        setSavedId(null);
+   233→        setBaseline(null);
+   234→      }
+   235→      toast.success('Cover letter deleted.');
+   236→      setDeleteTarget(null);
+   237→    } catch (e) {
+   238→      toast.error((e as Error).message);
+   239→    } finally {
+   240→      setDeleting(false);
+   241→    }
+   242→  };
+   243→
+   244→  return (
+   245→    <AppShell active="coverletter">
+   246→      <div className="space-y-6">
+   247→        {/* Page header */}
+   248→        <header className="flex items-start gap-3">
+   249→          <span
+   250→            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-600/30"
+   251→            aria-hidden
+   252→          >
+   253→            <MailOpen className="h-6 w-6" />
+   254→          </span>
+   255→          <div className="min-w-0">
+   256→            <h1 className="text-2xl font-bold tracking-tight text-white">AI Cover Letter Generator</h1>
+   257→            <p className="text-sm text-slate-400">
+   258→              Compose a tailored cover letter for any company and role, then edit, save and reuse it.
+   259→            </p>
+   260→          </div>
+   261→        </header>
+   262→
+   263→        {noResumes ? (
+   264→          /* Empty state: no resumes to generate from */
+   265→          <Card className={cn(GLASS, 'border-dashed')}>
+   266→            <CardContent className="flex flex-col items-center gap-4 py-14 text-center">
+   267→              <Float3D duration={5}>
+   268→                <span
+   269→                  className="flex h-14 w-14 items-center justify-center rounded-full bg-violet-500/15 text-violet-300"
+   270→                  aria-hidden
+   271→                >
+   272→                  <FilePlus2 className="h-7 w-7" />
+   273→                </span>
+   274→              </Float3D>
+   275→              <div className="space-y-1">
+   276→                <h2 className="text-lg font-semibold text-white">You haven&apos;t created a resume yet.</h2>
+   277→                <p className="mx-auto max-w-sm text-sm text-slate-400">
+   278→                  Cover letters are generated from your resume. Create one first, then come back to tailor a letter in
+   279→                  seconds.
+   280→                </p>
+   281→              </div>
+   282→              <Button className={PRIMARY_BTN} onClick={() => navigate('resumes')}>
+   283→                <FilePlus2 className="h-4 w-4" aria-hidden /> Create Your First Resume
+   284→              </Button>
+   285→            </CardContent>
+   286→          </Card>
+   287→        ) : (
+   288→          <>
+   289→            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+   290→              {/* ── LEFT: Generate form ── */}
+   291→              <Rise3D className="h-full">
+   292→                <Card className={cn(GLASS, 'h-full')}>
+   293→                  <CardHeader>
+   294→                    <CardTitle className="flex items-center gap-2 text-base text-white">
+   295→                      <Wand2 className="h-4 w-4 text-violet-300" aria-hidden /> Generate
+   296→                    </CardTitle>
+   297→                    <CardDescription className="text-slate-500">
+   298→                      Pick a resume, name the company and role, and the AI writes the letter.
+   299→                    </CardDescription>
+   300→                  </CardHeader>
+   301→                  <CardContent className="space-y-4">
+   302→                    <div className="space-y-1.5">
+   303→                      <Label htmlFor="coverletter-resume" className="text-slate-300">
+   304→                        Resume
+   305→                      </Label>
+   306→                      <Select value={resumeId || undefined} onValueChange={setResumeId} disabled={generating || loadingResumes}>
+   307→                        <SelectTrigger
+   308→                          id="coverletter-resume"
+   309→                          className={cn('min-h-[44px] w-full border-white/10 text-slate-100 dark:bg-white/[0.04] dark:hover:bg-white/[0.06]')}
+   310→                        >
+   311→                          <SelectValue placeholder={loadingResumes ? 'Loading resumes…' : 'Choose a resume'} />
+   312→                        </SelectTrigger>
+   313→                        <SelectContent className="border-white/[0.08] bg-[#0a0e1f] text-slate-200">
+   314→                          {resumes.map((r) => (
+   315→                            <SelectItem key={r.id} value={r.id} className="focus:bg-white/[0.06] focus:text-white">
+   316→                              {r.title}
+   317→                              {r.targetRole ? ` — ${r.targetRole}` : ''}
+   318→                            </SelectItem>
+   319→                          ))}
+   320→                        </SelectContent>
+   321→                      </Select>
+   322→                    </div>
+   323→
+   324→                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+   325→                      <div className="space-y-1.5">
+   326→                        <Label htmlFor="coverletter-company" className="text-slate-300">
+   327→                          Company <span className="text-fuchsia-400" aria-hidden>*</span>
+   328→                        </Label>
+   329→                        <Input
+   330→                          id="coverletter-company"
+   331→                          placeholder="e.g. Acme Corp"
+   332→                          value={company}
+   333→                          maxLength={120}
+   334→                          disabled={generating}
+   335→                          aria-invalid={companyError ? true : undefined}
+   336→                          className={INPUT_CLS}
+   337→                          onChange={(e) => {
+   338→                            setCompany(e.target.value);
+   339→                            if (companyError && e.target.value.trim()) setCompanyError(null);
+   340→                          }}
+   341→                        />
+   342→                        {companyError && <p className="text-xs text-rose-400">{companyError}</p>}
+   343→                      </div>
+   344→                      <div className="space-y-1.5">
+   345→                        <Label htmlFor="coverletter-role" className="text-slate-300">
+   346→                          Job role <span className="text-fuchsia-400" aria-hidden>*</span>
+   347→                        </Label>
+   348→                        <Input
+   349→                          id="coverletter-role"
+   350→                          placeholder="e.g. Frontend Developer"
+   351→                          value={role}
+   352→                          maxLength={120}
+   353→                          disabled={generating}
+   354→                          aria-invalid={roleError ? true : undefined}
+   355→                          className={INPUT_CLS}
+   356→                          onChange={(e) => {
+   357→                            setRole(e.target.value);
+   358→                            if (roleError && e.target.value.trim()) setRoleError(null);
+   359→                          }}
+   360→                        />
+   361→                        {roleError && <p className="text-xs text-rose-400">{roleError}</p>}
+   362→                      </div>
+   363→                    </div>
+   364→
+   365→                    <div className="space-y-1.5">
+   366→                      <Label htmlFor="coverletter-jd" className="text-slate-300">
+   367→                        Job description <span className="text-slate-500">(optional)</span>
+   368→                      </Label>
+   369→                      <Textarea
+   370→                        id="coverletter-jd"
+   371→                        rows={5}
+   372→                        maxLength={15000}
+   373→                        placeholder="Paste the job description for extra tailoring (optional)"
+   374→                        value={jobDescription}
+   375→                        disabled={generating}
+   376→                        className={cn(INPUT_CLS, 'min-h-[110px] resize-y')}
+   377→                        onChange={(e) => setJobDescription(e.target.value)}
+   378→                      />
+   379→                    </div>
+   380→
+   381→                    <div className="space-y-1.5">
+   382→                      <Label className="text-slate-300">Tone</Label>
+   383→                      <div className="grid grid-cols-3 gap-2" role="group" aria-label="Letter tone">
+   384→                        {COVER_LETTER_TONES.map((t) => (
+   385→                          <button
+   386→                            key={t.key}
+   387→                            type="button"
+   388→                            onClick={() => setTone(t.key)}
+   389→                            aria-pressed={tone === t.key}
+   390→                            disabled={generating}
+   391→                            className={cn(
+   392→                              'min-h-[44px] rounded-lg border px-2 text-xs font-medium transition-all duration-200 sm:text-sm',
+   393→                              tone === t.key
+   394→                                ? 'border-violet-400/40 bg-gradient-to-r from-violet-600/30 to-fuchsia-600/20 text-white shadow-[0_0_18px_-6px_rgba(139,92,246,0.7)]'
+   395→                                : 'border-white/10 bg-white/[0.03] text-slate-400 hover:bg-white/[0.08] hover:text-white',
+   396→                            )}
+   397→                          >
+   398→                            {t.label}
+   399→                          </button>
+   400→                        ))}
+   401→                      </div>
+   402→                    </div>
+   403→
+   404→                    <div className="pt-1">
+   405→                      <LoadingButton
+   406→                        loading={generating}
+   407→                        loadingText="Composing your letter…"
+   408→                        disabled={!selectedResume}
+   409→                        onClick={runGenerate}
+   410→                        className={cn(PRIMARY_BTN, 'w-full')}
+   411→                      >
+   412→                        <Sparkles className="h-4 w-4" aria-hidden /> Generate Cover Letter
+   413→                      </LoadingButton>
+   414→                      {!selectedResume && (
+   415→                        <p className="mt-2 text-xs text-slate-500">Choose a resume to enable generation.</p>
+   416→                      )}
+   417→                    </div>
+   418→                  </CardContent>
+   419→                </Card>
+   420→              </Rise3D>
+   421→
+   422→              {/* ── RIGHT: Result ── */}
+   423→              <div className="min-w-0" aria-live="polite">
+   424→                {generating ? (
+   425→                  <Card className={cn(GLASS, 'flex h-full min-h-[420px] flex-col items-center justify-center gap-4 py-12 text-center')}>
+   426→                    <span className="flex h-14 w-14 items-center justify-center rounded-full bg-violet-500/15" aria-hidden>
+   427→                      <Loader2 className="h-7 w-7 animate-spin text-violet-300" aria-hidden />
+   428→                    </span>
+   429→                    <div className="space-y-1">
+   430→                      <p className="text-sm font-medium text-slate-100">Composing your letter…</p>
+   431→                      <p className="animate-pulse text-xs text-slate-500">
+   432→                        Reading your resume and tailoring every paragraph — this usually takes 5–15 seconds.
+   433→                      </p>
+   434→                    </div>
+   435→                    <div className="w-full max-w-xs space-y-2 px-6">
+   436→                      <Skeleton className="h-3 w-full bg-white/[0.06]" />
+   437→                      <Skeleton className="h-3 w-11/12 bg-white/[0.06]" />
+   438→                      <Skeleton className="h-3 w-4/5 bg-white/[0.06]" />
+   439→                    </div>
+   440→                  </Card>
+   441→                ) : hasResult ? (
+   442→                  <Rise3D distance={18} tilt={5} className="h-full">
+   443→                    <Card className={cn(GLASS, 'h-full')}>
+   444→                      <CardHeader>
+   445→                        <div className="flex flex-wrap items-center justify-between gap-2">
+   446→                          <CardTitle className="flex items-center gap-2 text-base text-white">
+   447→                            <FileText className="h-4 w-4 text-cyan-300" aria-hidden /> Your cover letter
+   448→                          </CardTitle>
+   449→                          <div className="flex flex-wrap items-center gap-1.5">
+   450→                            <Badge variant="outline" className="border-violet-400/30 bg-violet-500/10 text-violet-200">
+   451→                              {wordCount(letterContent)} words
+   452→                            </Badge>
+   453→                            <Badge variant="outline" className={TONE_BADGE[tone] ?? 'border-white/15 text-slate-300'}>
+   454→                              {COVER_LETTER_TONES.find((t) => t.key === tone)?.label ?? tone}
+   455→                            </Badge>
+   456→                            {savedId && (
+   457→                              <Badge variant="outline" className="border-emerald-400/30 bg-emerald-400/10 text-emerald-300">
+   458→                                Saved
+   459→                              </Badge>
+   460→                            )}
+   461→                          </div>
+   462→                        </div>
+   463→                        <CardDescription className="text-slate-500">
+   464→                          Feel free to tweak the text below — then copy, download or save it.
+   465→                        </CardDescription>
+   466→                      </CardHeader>
+   467→                      <CardContent className="space-y-4">
+   468→                        <Textarea
+   469→                          aria-label="Generated cover letter"
+   470→                          value={letterContent}
+   471→                          onChange={(e) => setLetterContent(e.target.value)}
+   472→                          rows={14}
+   473→                          className={cn(INPUT_CLS, 'min-h-[320px] resize-y whitespace-normal leading-relaxed')}
+   474→                        />
+   475→                        <div className="flex flex-wrap gap-2">
+   476→                          <Button
+   477→                            variant="outline"
+   478→                            className={OUTLINE_BTN}
+   479→                            onClick={runGenerate}
+   480→                            disabled={generating || !selectedResume || !company.trim() || !role.trim()}
+   481→                          >
+   482→                            <RefreshCw className="h-4 w-4" aria-hidden /> Regenerate
+   483→                          </Button>
+   484→                          <Button variant="outline" className={OUTLINE_BTN} onClick={copyLetter}>
+   485→                            <Copy className="h-4 w-4" aria-hidden /> Copy
+   486→                          </Button>
+   487→                          <LoadingButton
+   488→                            loading={saving}
+   489→                            loadingText="Saving…"
+   490→                            onClick={saveLetter}
+   491→                            disabled={!selectedResume}
+   492→                            className={PRIMARY_BTN}
+   493→                          >
+   494→                            <Save className="h-4 w-4" aria-hidden /> {savedId ? 'Update' : 'Save'}
+   495→                          </LoadingButton>
+   496→                          <Button variant="outline" className={OUTLINE_BTN} onClick={downloadLetter}>
+   497→                            <Download className="h-4 w-4" aria-hidden /> Download .txt
+   498→                          </Button>
+   499→                        </div>
+   500→                      </CardContent>
+   501→                    </Card>
+   502→                  </Rise3D>
+   503→                ) : (
+   504→                  <Card className={cn(GLASS, 'flex h-full min-h-[420px] flex-col items-center justify-center gap-3 border-dashed py-12 text-center')}>
+   505→                    <Float3D duration={5} wobble={3}>
+   506→                      <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/[0.04] text-slate-400" aria-hidden>
+   507→                        <MailOpen className="h-7 w-7" />
+   508→                      </span>
+   509→                    </Float3D>
+   510→                    <p className="max-w-xs text-sm text-slate-400">
+   511→                      Your generated letter will appear here — editable, copyable and ready to save.
+   512→                    </p>
+   513→                  </Card>
+   514→                )}
+   515→              </div>
+   516→            </div>
+   517→
+   518→            {/* ── Saved letters ── */}
+   519→            <Rise3D>
+   520→              <Card className={GLASS}>
+   521→                <CardHeader>
+   522→                  <div className="flex flex-wrap items-center justify-between gap-2">
+   523→                    <CardTitle className="flex items-center gap-2 text-base text-white">
+   524→                      <FileText className="h-4 w-4 text-fuchsia-300" aria-hidden /> Saved letters
+   525→                    </CardTitle>
+   526→                    {letters.length > 0 && (
+   527→                      <Badge variant="outline" className="border-white/15 text-slate-400">
+   528→                        {letters.length} saved
+   529→                      </Badge>
+   530→                    )}
+   531→                  </div>
+   532→                  <CardDescription className="text-slate-500">
+   533→                    Open a letter to load it back into the editor, or remove ones you no longer need.
+   534→                  </CardDescription>
+   535→                </CardHeader>
+   536→                <CardContent>
+   537→                  {lettersLoading ? (
+   538→                    <div className="space-y-3">
+   539→                      {[0, 1, 2].map((i) => (
+   540→                        <Skeleton key={i} className="h-16 w-full bg-white/[0.06]" />
+   541→                      ))}
+   542→                    </div>
+   543→                  ) : lettersError ? (
+   544→                    <div className="flex flex-col items-center gap-3 rounded-lg border border-rose-400/20 bg-rose-400/[0.04] px-4 py-6 text-center">
+   545→                      <p className="text-sm text-rose-300">{lettersError}</p>
+   546→                      <Button variant="outline" className={OUTLINE_BTN} onClick={() => void loadLetters()}>
+   547→                        <RefreshCw className="h-4 w-4" aria-hidden /> Retry
+   548→                      </Button>
+   549→                    </div>
+   550→                  ) : letters.length === 0 ? (
+   551→                    <p className="py-6 text-center text-sm text-slate-500">
+   552→                      No saved letters yet — generate one above and hit Save to keep it here.
+   553→                    </p>
+   554→                  ) : (
+   555→                    <div className="max-h-[420px] space-y-3 overflow-y-auto pr-1 [scrollbar-color:rgba(255,255,255,0.15)_transparent] [scrollbar-width:thin]">
+   556→                      {letters.map((l) => (
+   557→                        <div
+   558→                          key={l.id}
+   559→                          className={cn(
+   560→                            'flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/[0.05] bg-white/[0.02] p-3 transition-colors hover:border-white/[0.12]',
+   561→                            savedId === l.id && 'border-violet-400/30 bg-violet-500/[0.06]',
+   562→                          )}
+   563→                        >
+   564→                          <div className="min-w-0 flex-1">
+   565→                            <p className="truncate text-sm font-medium text-slate-100">
+   566→                              {l.company} — {l.role}
+   567→                            </p>
+   568→                            <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
+   569→                              <Badge variant="outline" className={cn('px-1.5 py-0', TONE_BADGE[l.tone] ?? 'border-white/15 text-slate-400')}>
+   570→                                {COVER_LETTER_TONES.find((t) => t.key === l.tone)?.label ?? l.tone}
+   571→                              </Badge>
+   572→                              <span>{timeAgo(l.updatedAt)}</span>
+   573→                              <span aria-hidden>·</span>
+   574→                              <span>{wordCount(l.content)} words</span>
+   575→                              {l.resumeTitle && (
+   576→                                <>
+   577→                                  <span aria-hidden>·</span>
+   578→                                  <span className="truncate">{l.resumeTitle}</span>
+   579→                                </>
+   580→                              )}
+   581→                            </div>
+   582→                          </div>
+   583→                          <div className="flex shrink-0 gap-2">
+   584→                            <Button variant="outline" size="sm" className={cn(OUTLINE_BTN, 'min-h-[44px] px-3 text-xs')} onClick={() => openLetter(l)}>
+   585→                              Open
+   586→                            </Button>
+   587→                            <Button
+   588→                              variant="outline"
+   589→                              size="sm"
+   590→                              className={cn(OUTLINE_BTN, 'min-h-[44px] px-3 text-rose-300 hover:text-rose-200')}
+   591→                              onClick={() => setDeleteTarget(l)}
+   592→                              aria-label={`Delete cover letter for ${l.company}`}
+   593→                            >
+   594→                              <Trash2 className="h-4 w-4" aria-hidden /> Delete
+   595→                            </Button>
+   596→                          </div>
+   597→                        </div>
+   598→                      ))}
+   599→                    </div>
+   600→                  )}
+   601→                </CardContent>
+   602→              </Card>
+   603→            </Rise3D>
+   604→
+   605→            {/* Delete confirmation */}
+   606→            <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+   607→              <AlertDialogContent className="border-white/[0.10] bg-[#0a0e1f] text-slate-200">
+   608→                <AlertDialogHeader>
+   609→                  <AlertDialogTitle className="text-white">Delete this cover letter?</AlertDialogTitle>
+   610→                  <AlertDialogDescription className="text-slate-400">
+   611→                    {deleteTarget && `“${deleteTarget.company} — ${deleteTarget.role}” will be permanently removed. This cannot be undone.`}
+   612→                  </AlertDialogDescription>
+   613→                </AlertDialogHeader>
+   614→                <AlertDialogFooter>
+   615→                  <AlertDialogCancel
+   616→                    className="border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.08] hover:text-white"
+   617→                    disabled={deleting}
+   618→                  >
+   619→                    Cancel
+   620→                  </AlertDialogCancel>
+   621→                  <AlertDialogAction
+   622→                    className="bg-rose-600 text-white hover:bg-rose-500"
+   623→                    disabled={deleting}
+   624→                    onClick={() => void confirmDelete()}
+   625→                  >
+   626→                    <Trash2 className="h-4 w-4" aria-hidden /> {deleting ? 'Deleting…' : 'Delete'}
+   627→                  </AlertDialogAction>
+   628→                </AlertDialogFooter>
+   629→              </AlertDialogContent>
+   630→            </AlertDialog>
+   631→          </>
+   632→        )}
+   633→      </div>
+   634→    </AppShell>
+   635→  );
+   636→}
+   637→
+   638→

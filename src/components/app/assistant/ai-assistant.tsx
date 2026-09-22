@@ -146,6 +146,14 @@ export function AiAssistant() {
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
 
+  // AppShell's sidebar / top-bar "AI Assistant" buttons open the panel
+  // by dispatching this custom window event.
+  useEffect(() => {
+    const onOpen = () => setOpen(true);
+    window.addEventListener('rra:assistant:open', onOpen);
+    return () => window.removeEventListener('rra:assistant:open', onOpen);
+  }, []);
+
   // Focus the composer when the panel opens.
   useEffect(() => {
     if (!open) return;

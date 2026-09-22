@@ -26,13 +26,16 @@ export async function GET() {
       db.coverLetter.count({ where: { userId: user.id } }),
     ]);
 
-    const scoreHistory = analyses.map((a) => ({
-      date: a.createdAt.toISOString(),
-      score: a.score as number,
-      resumeTitle: a.resume.title,
-      targetRole: a.targetRole,
-      type: a.type,
-    }));
+    // The chart is labelled "ATS Score History" — JOB_MATCH scores must not mix in.
+    const scoreHistory = analyses
+      .filter((a) => a.type === 'ATS')
+      .map((a) => ({
+        date: a.createdAt.toISOString(),
+        score: a.score as number,
+        resumeTitle: a.resume.title,
+        targetRole: a.targetRole,
+        type: a.type,
+      }));
 
     const first = scoreHistory[0]?.score ?? null;
     const latest = scoreHistory[scoreHistory.length - 1]?.score ?? null;

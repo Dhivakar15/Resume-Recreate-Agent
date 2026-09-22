@@ -20,7 +20,7 @@ export async function PUT(req: Request, { params }: Params) {
         company: body.company ?? undefined,
         role: body.role ?? undefined,
         status: body.status ?? undefined,
-        appliedDate: body.appliedDate !== undefined ? (body.appliedDate ? new Date(body.appliedDate) : null) : undefined,
+        appliedDate: body.appliedDate !== undefined ? (body.appliedDate ? new Date(body.appliedDate) : new Date()) : undefined,
         interviewDate: body.interviewDate !== undefined ? (body.interviewDate ? new Date(body.interviewDate) : null) : undefined,
         notes: body.notes !== undefined ? body.notes : undefined,
       },

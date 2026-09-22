@@ -1,4 +1,4 @@
-import { ok, handleError, parseBody, requireUser } from '@/lib/api-helpers';
+import { ok, handleError, parseBody, requireUser, ApiError } from '@/lib/api-helpers';
 import { assistantSchema } from '@/lib/validation';
 import { assistantReply } from '@/lib/ai';
 import { aiErrorResponse, aiRateLimitResponse, loadUserResume } from '@/lib/resume-loader';
@@ -16,9 +16,16 @@ export async function POST(req: Request) {
 
     let resumeText = '';
     if (body.resumeId) {
-      const { text } = await loadUserResume(user.id, body.resumeId);
-      resumeText = text;
-    } else {
+      try {
+        const { text } = await loadUserResume(user.id, body.resumeId);
+        resumeText = text;
+      } catch (e) {
+        // A missing or near-empty resume must not break the chat — the
+        // assistant simply coaches the user on filling it in instead.
+        if (e instanceof ApiError && e.status === 404) throw e;
+      }
+    }
+    if (!resumeText) {
       // Fall back to the user's most recently updated resume.
       const latest = await db.resume.findFirst({
         where: { userId: user.id },

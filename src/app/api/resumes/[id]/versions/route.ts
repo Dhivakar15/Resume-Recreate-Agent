@@ -1,7 +1,6 @@
 import { db } from '@/lib/db';
 import { ok, handleError, parseBody, requireUser, ApiError } from '@/lib/api-helpers';
 import { saveVersionSchema } from '@/lib/validation';
-import { logActivity } from '@/lib/activity';
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -16,7 +15,7 @@ export async function GET(_req: Request, { params }: Params) {
       where: { resumeId: resume.id },
       orderBy: { createdAt: 'desc' },
       take: 20,
-      select: { id: true, label: true, createdAt: true, data: true },
+      select: { id: true, label: true, data: true, createdAt: true },
     });
     return ok({ versions });
   } catch (e) {
@@ -42,7 +41,6 @@ export async function POST(req: Request, { params }: Params) {
       },
       select: { id: true, label: true, createdAt: true },
     });
-    await logActivity(user.id, 'version_saved', `Saved version "${version.label}" of "${resume.title}"`);
     return ok({ version }, 201);
   } catch (e) {
     return handleError(e);

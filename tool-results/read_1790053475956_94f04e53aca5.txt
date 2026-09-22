@@ -1,0 +1,547 @@
+     1→     1→'use client';
+     2→     2→
+     3→     3→import { useEffect, useRef, useState } from 'react';
+     4→     4→import { toast } from 'sonner';
+     5→     5→import { AppShell } from '@/components/app/app-shell';
+     6→     6→import { LoadingButton } from '@/components/app/loading-button';
+     7→     7→import { Float3D, Rise3D } from '@/components/app/three-d/motion';
+     8→     8→import { apiFetch } from '@/lib/client/api';
+     9→     9→import { navigate } from '@/lib/client/navigation';
+    10→    10→import { useResumesStore } from '@/stores/resumes-store';
+    11→    11→import { type CareerProfileResult } from '@/types/ai-tools';
+    12→    12→import { Badge } from '@/components/ui/badge';
+    13→    13→import { Button } from '@/components/ui/button';
+    14→    14→import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+    15→    15→import { Label } from '@/components/ui/label';
+    16→    16→import { Progress } from '@/components/ui/progress';
+    17→    17→import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+    18→    18→import { Skeleton } from '@/components/ui/skeleton';
+    19→    19→import {
+    20→    20→  AlertTriangle,
+    21→    21→  Award,
+    22→    22→  BookOpen,
+    23→    23→  BriefcaseBusiness,
+    24→    24→  Check,
+    25→    25→  Compass,
+    26→    26→  Cpu,
+    27→    27→  FilePlus2,
+    28→    28→  FolderGit2,
+    29→    29→  Lightbulb,
+    30→    30→  MessagesSquare,
+    31→    31→  RefreshCw,
+    32→    32→  Sparkles,
+    33→    33→  Target,
+    34→    34→  TrendingUp,
+    35→    35→} from 'lucide-react';
+    36→    36→import { cn } from '@/lib/utils';
+    37→    37→
+    38→    38→// ─── Midnight Glass recipes ──────────────────────────────────────────────────
+    39→    39→
+    40→    40→const GLASS = 'border border-white/[0.07] bg-white/[0.03] backdrop-blur-xl';
+    41→    41→const OUTLINE_BTN = 'border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.08] hover:text-white min-h-[44px]';
+    42→    42→const PRIMARY_BTN =
+    43→    43→  'min-h-[44px] bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white hover:from-violet-500 hover:to-fuchsia-500';
+    44→    44→
+    45→    45→const CHIP = {
+    46→    46→  emerald: 'border border-emerald-400/20 bg-emerald-400/10 text-emerald-300',
+    47→    47→  rose: 'border border-rose-400/20 bg-rose-400/10 text-rose-300',
+    48→    48→  cyan: 'border border-cyan-400/20 bg-cyan-400/10 text-cyan-300',
+    49→    49→} as const;
+    50→    50→
+    51→    51→function Chip({ label, className }: { label: string; className: string }) {
+    52→    52→  return (
+    53→    53→    <span className={cn('inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium', className)}>
+    54→    54→      {label}
+    55→    55→    </span>
+    56→    56→  );
+    57→    57→}
+    58→    58→
+    59→    59→function ChipCard({
+    60→    60→  title,
+    61→    61→  description,
+    62→    62→  icon,
+    63→    63→  chipClass,
+    64→    64→  items,
+    65→    65→  emptyText,
+    66→    66→}: {
+    67→    67→  title: string;
+    68→    68→  description: string;
+    69→    69→  icon: React.ReactNode;
+    70→    70→  chipClass: string;
+    71→    71→  items: string[];
+    72→    72→  emptyText: string;
+    73→    73→}) {
+    74→    74→  return (
+    75→    75→    <Card className={cn(GLASS, 'h-full')}>
+    76→    76→      <CardHeader className="pb-3">
+    77→    77→        <CardTitle className="flex items-center gap-2 text-sm text-white">
+    78→    78→          {icon} {title}
+    79→    79→        </CardTitle>
+    80→    80→        <CardDescription className="text-xs text-slate-500">{description}</CardDescription>
+    81→    81→      </CardHeader>
+    82→    82→      <CardContent>
+    83→    83→        <div className="max-h-52 overflow-y-auto pr-0.5 [scrollbar-color:rgba(255,255,255,0.15)_transparent] [scrollbar-width:thin]">
+    84→    84→          {items.length > 0 ? (
+    85→    85→            <div className="flex flex-wrap gap-1.5">
+    86→    86→              {items.map((s, i) => (
+    87→    87→                <Chip key={`${s}-${i}`} label={s} className={chipClass} />
+    88→    88→              ))}
+    89→    89→            </div>
+    90→    90→          ) : (
+    91→    91→            <p className="text-xs text-slate-500">{emptyText}</p>
+    92→    92→          )}
+    93→    93→        </div>
+    94→    94→      </CardContent>
+    95→    95→    </Card>
+    96→    96→  );
+    97→    97→}
+    98→    98→
+    99→    99→/** AI Career Advisor: roles, gaps, roadmap, learning plan and interview prep from a resume. */
+   100→   100→export function CareerView() {
+   101→   101→  const resumes = useResumesStore((s) => s.resumes);
+   102→   102→  const resumesLoaded = useResumesStore((s) => s.loaded);
+   103→   103→  const loadingResumes = useResumesStore((s) => s.loading);
+   104→   104→  const fetchResumes = useResumesStore((s) => s.fetch);
+   105→   105→
+   106→   106→  const [resumeId, setResumeId] = useState('');
+   107→   107→  const [generating, setGenerating] = useState(false);
+   108→   108→  const [profile, setProfile] = useState<CareerProfileResult | null>(null);
+   109→   109→  const [runError, setRunError] = useState<string | null>(null);
+   110→   110→  const bootedRef = useRef(false);
+   111→   111→
+   112→   112→  useEffect(() => {
+   113→   113→    if (bootedRef.current) return;
+   114→   114→    bootedRef.current = true;
+   115→   115→    fetchResumes(!useResumesStore.getState().loaded).catch((e: unknown) => toast.error((e as Error).message));
+   116→   116→  }, [fetchResumes]);
+   117→   117→
+   118→   118→  const noResumes = resumesLoaded && resumes.length === 0;
+   119→   119→  const selectedResume = resumes.find((r) => r.id === resumeId) ?? null;
+   120→   120→
+   121→   121→  const runGenerate = async () => {
+   122→   122→    if (generating || !selectedResume) return;
+   123→   123→    setGenerating(true);
+   124→   124→    setRunError(null);
+   125→   125→    try {
+   126→   126→      const data = await apiFetch<CareerProfileResult>('/api/ai/career', {
+   127→   127→        method: 'POST',
+   128→   128→        json: { resumeId: selectedResume.id },
+   129→   129→      });
+   130→   130→      setProfile(data);
+   131→   131→      toast.success('Career profile ready — time to plan your next move.');
+   132→   132→    } catch (e) {
+   133→   133→      setRunError((e as Error).message);
+   134→   134→      toast.error((e as Error).message);
+   135→   135→    } finally {
+   136→   136→      setGenerating(false);
+   137→   137→    }
+   138→   138→  };
+   139→   139→
+   140→   140→  return (
+   141→   141→    <AppShell active="career">
+   142→   142→      <div className="space-y-6">
+   143→   143→        {/* Page header */}
+   144→   144→        <header className="flex items-start gap-3">
+   145→   145→          <span
+   146→   146→            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-600/30"
+   147→   147→            aria-hidden
+   148→   148→          >
+   149→   149→            <Compass className="h-6 w-6" />
+   150→   150→          </span>
+   151→   151→          <div className="min-w-0">
+   152→   152→            <h1 className="text-2xl font-bold tracking-tight text-white">AI Career Advisor</h1>
+   153→   153→            <p className="text-sm text-slate-400">
+   154→   154→              A discussion-ready career profile: roles that fit, skills to build, and a roadmap to get there.
+   155→   155→            </p>
+   156→   156→          </div>
+   157→   157→        </header>
+   158→   158→
+   159→   159→        {noResumes ? (
+   160→   160→          /* Empty state: no resumes yet */
+   161→   161→          <Card className={cn(GLASS, 'border-dashed')}>
+   162→   162→            <CardContent className="flex flex-col items-center gap-4 py-14 text-center">
+   163→   163→              <Float3D duration={5}>
+   164→   164→                <span
+   165→   165→                  className="flex h-14 w-14 items-center justify-center rounded-full bg-violet-500/15 text-violet-300"
+   166→   166→                  aria-hidden
+   167→   167→                >
+   168→   168→                  <FilePlus2 className="h-7 w-7" />
+   169→   169→                </span>
+   170→   170→              </Float3D>
+   171→   171→              <div className="space-y-1">
+   172→   172→                <h2 className="text-lg font-semibold text-white">You haven&apos;t created a resume yet.</h2>
+   173→   173→                <p className="mx-auto max-w-sm text-sm text-slate-400">
+   174→   174→                  The Career Advisor reads your resume to map your trajectory. Create one first, then come back for your
+   175→   175→                  personalized career plan.
+   176→   176→                </p>
+   177→   177→              </div>
+   178→   178→              <Button className={PRIMARY_BTN} onClick={() => navigate('resumes')}>
+   179→   179→                <FilePlus2 className="h-4 w-4" aria-hidden /> Create Your First Resume
+   180→   180→              </Button>
+   181→   181→            </CardContent>
+   182→   182→          </Card>
+   183→   183→        ) : (
+   184→   184→          <>
+   185→   185→            {/* Setup card */}
+   186→   186→            <Rise3D>
+   187→   187→              <Card className={GLASS}>
+   188→   188→                <CardHeader>
+   189→   189→                  <CardTitle className="flex items-center gap-2 text-base text-white">
+   190→   190→                    <Compass className="h-4 w-4 text-violet-300" aria-hidden /> Career profile setup
+   191→   191→                  </CardTitle>
+   192→   192→                  <CardDescription className="text-slate-500">
+   193→   193→                    Choose which resume the advisor should analyze.
+   194→   194→                  </CardDescription>
+   195→   195→                </CardHeader>
+   196→   196→                <CardContent className="space-y-4">
+   197→   197→                  <div className="space-y-1.5">
+   198→   198→                    <Label htmlFor="career-resume" className="text-slate-300">
+   199→   199→                      Resume
+   200→   200→                    </Label>
+   201→   201→                    <Select value={resumeId || undefined} onValueChange={setResumeId} disabled={generating || loadingResumes}>
+   202→   202→                      <SelectTrigger
+   203→   203→                        id="career-resume"
+   204→   204→                        className="min-h-[44px] w-full border-white/10 text-slate-100 dark:bg-white/[0.04] dark:hover:bg-white/[0.06]"
+   205→   205→                      >
+   206→   206→                        <SelectValue placeholder={loadingResumes ? 'Loading resumes…' : 'Choose a resume'} />
+   207→   207→                      </SelectTrigger>
+   208→   208→                      <SelectContent className="border-white/[0.08] bg-[#0a0e1f] text-slate-200">
+   209→   209→                        {resumes.map((r) => (
+   210→   210→                          <SelectItem key={r.id} value={r.id} className="focus:bg-white/[0.06] focus:text-white">
+   211→   211→                            {r.title}
+   212→   212→                            {r.targetRole ? ` — ${r.targetRole}` : ''}
+   213→   213→                          </SelectItem>
+   214→   214→                        ))}
+   215→   215→                      </SelectContent>
+   216→   216→                    </Select>
+   217→   217→                  </div>
+   218→   218→                  <div className="flex justify-end">
+   219→   219→                    <LoadingButton
+   220→   220→                      loading={generating}
+   221→   221→                      loadingText="Analyzing your career trajectory…"
+   222→   222→                      disabled={!selectedResume}
+   223→   223→                      onClick={runGenerate}
+   224→   224→                      className={cn(PRIMARY_BTN, 'w-full sm:w-auto')}
+   225→   225→                    >
+   226→   226→                      <Sparkles className="h-4 w-4" aria-hidden /> Generate Career Profile
+   227→   227→                    </LoadingButton>
+   228→   228→                  </div>
+   229→   229→                  {!selectedResume && <p className="text-xs text-slate-500">Choose a resume to enable generation.</p>}
+   230→   230→                </CardContent>
+   231→   231→              </Card>
+   232→   232→            </Rise3D>
+   233→   233→
+   234→   234→            {generating ? (
+   235→   235→              /* Loading skeleton */
+   236→   236→              <div className="space-y-6" aria-live="polite" aria-busy="true">
+   237→   237→                <Card className={GLASS}>
+   238→   238→                  <CardContent className="space-y-3 py-6">
+   239→   239→                    <Skeleton className="h-5 w-1/3 bg-white/[0.06]" />
+   240→   240→                    <Skeleton className="h-3 w-full bg-white/[0.06]" />
+   241→   241→                    <Skeleton className="h-3 w-11/12 bg-white/[0.06]" />
+   242→   242→                    <Skeleton className="h-3 w-4/5 bg-white/[0.06]" />
+   243→   243→                  </CardContent>
+   244→   244→                </Card>
+   245→   245→                <Card className={GLASS}>
+   246→   246→                  <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+   247→   247→                    {[0, 1, 2, 3].map((i) => (
+   248→   248→                      <Skeleton key={i} className="h-28 w-full bg-white/[0.06]" />
+   249→   249→                    ))}
+   250→   250→                  </CardContent>
+   251→   251→                </Card>
+   252→   252→                <Card className={GLASS}>
+   253→   253→                  <CardContent className="grid grid-cols-1 gap-3 md:grid-cols-3">
+   254→   254→                    {[0, 1, 2].map((i) => (
+   255→   255→                      <Skeleton key={i} className="h-36 w-full bg-white/[0.06]" />
+   256→   256→                    ))}
+   257→   257→                  </CardContent>
+   258→   258→                </Card>
+   259→   259→              </div>
+   260→   260→            ) : runError ? (
+   261→   261→              /* Inline error + retry */
+   262→   262→              <Card className={cn(GLASS, 'border-rose-400/20')}>
+   263→   263→                <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
+   264→   264→                  <span className="flex h-12 w-12 items-center justify-center rounded-full bg-rose-400/10 text-rose-300" aria-hidden>
+   265→   265→                    <AlertTriangle className="h-6 w-6" />
+   266→   266→                  </span>
+   267→   267→                  <p className="max-w-md text-sm text-rose-300">{runError}</p>
+   268→   268→                  <Button variant="outline" className={OUTLINE_BTN} onClick={runGenerate}>
+   269→   269→                    <RefreshCw className="h-4 w-4" aria-hidden /> Retry
+   270→   270→                  </Button>
+   271→   271→                </CardContent>
+   272→   272→              </Card>
+   273→   273→            ) : profile ? (
+   274→   274→              /* ── Results ── */
+   275→   275→              <div className="space-y-6" aria-live="polite">
+   276→   276→                {/* a) Summary + recommended job roles */}
+   277→   277→                <Rise3D distance={20} tilt={6}>
+   278→   278→                  <Card className={GLASS}>
+   279→   279→                    <CardHeader>
+   280→   280→                      <CardTitle className="flex items-center gap-2 text-base text-white">
+   281→   281→                        <span className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white">
+   282→   282→                          <Sparkles className="h-4 w-4" aria-hidden />
+   283→   283→                        </span>
+   284→   284→                        Career Summary
+   285→   285→                      </CardTitle>
+   286→   286→                      <CardDescription className="text-slate-500">
+   287→   287→                        Generated {new Date(profile.generatedAt).toLocaleString()}
+   288→   288→                      </CardDescription>
+   289→   289→                    </CardHeader>
+   290→   290→                    <CardContent className="space-y-6">
+   291→   291→                      <p className="text-sm leading-relaxed text-slate-300">{profile.summary}</p>
+   292→   292→                      <div className="space-y-3">
+   293→   293→                        <h3 className="flex items-center gap-2 text-sm font-semibold text-white">
+   294→   294→                          <BriefcaseBusiness className="h-4 w-4 text-cyan-300" aria-hidden /> Recommended Job Roles
+   295→   295→                        </h3>
+   296→   296→                        {profile.jobRoles.length > 0 ? (
+   297→   297→                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+   298→   298→                            {profile.jobRoles.map((role, i) => (
+   299→   299→                              <div key={`${role.title}-${i}`} className="space-y-2.5 rounded-lg border border-white/[0.05] bg-white/[0.02] p-4">
+   300→   300→                                <div className="flex items-center justify-between gap-2">
+   301→   301→                                  <p className="min-w-0 truncate text-sm font-semibold text-slate-100">{role.title}</p>
+   302→   302→                                  <span className="shrink-0 text-sm font-bold tabular-nums text-violet-300">
+   303→   303→                                    {Math.round(role.matchScore)}%
+   304→   304→                                  </span>
+   305→   305→                                </div>
+   306→   306→                                <Progress
+   307→   307→                                  value={Math.max(0, Math.min(100, role.matchScore))}
+   308→   308→                                  className="h-1.5 bg-white/[0.06] [&>div]:bg-gradient-to-r [&>div]:from-violet-500 [&>div]:to-fuchsia-400"
+   309→   309→                                  aria-label={`${role.title}: ${role.matchScore}% match`}
+   310→   310→                                />
+   311→   311→                                <p className="text-xs leading-relaxed text-slate-500">{role.why}</p>
+   312→   312→                              </div>
+   313→   313→                            ))}
+   314→   314→                          </div>
+   315→   315→                        ) : (
+   316→   316→                          <p className="text-sm text-slate-500">No role matches were generated.</p>
+   317→   317→                        )}
+   318→   318→                      </div>
+   319→   319→                    </CardContent>
+   320→   320→                  </Card>
+   321→   321→                </Rise3D>
+   322→   322→
+   323→   323→                {/* b) Skills in demand / gaps / technologies */}
+   324→   324→                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+   325→   325→                  <Rise3D delay={0.06} className="h-full">
+   326→   326→                    <ChipCard
+   327→   327→                      title="Skills in Demand"
+   328→   328→                      description="Strengths the market is looking for in you."
+   329→   329→                      icon={<TrendingUp className="h-4 w-4 text-emerald-400" aria-hidden />}
+   330→   330→                      chipClass={CHIP.emerald}
+   331→   331→                      items={profile.skillsInDemand}
+   332→   332→                      emptyText="No skills in demand identified."
+   333→   333→                    />
+   334→   334→                  </Rise3D>
+   335→   335→                  <Rise3D delay={0.1} className="h-full">
+   336→   336→                    <ChipCard
+   337→   337→                      title="Skill Gaps"
+   338→   338→                      description="Areas to strengthen for your next role."
+   339→   339→                      icon={<Target className="h-4 w-4 text-rose-400" aria-hidden />}
+   340→   340→                      chipClass={CHIP.rose}
+   341→   341→                      items={profile.skillGaps}
+   342→   342→                      emptyText="No skill gaps identified."
+   343→   343→                    />
+   344→   344→                  </Rise3D>
+   345→   345→                  <Rise3D delay={0.14} className="h-full">
+   346→   346→                    <ChipCard
+   347→   347→                      title="Technologies to Adopt"
+   348→   348→                      description="Modern tooling worth adding to your stack."
+   349→   349→                      icon={<Cpu className="h-4 w-4 text-cyan-300" aria-hidden />}
+   350→   350→                      chipClass={CHIP.cyan}
+   351→   351→                      items={profile.technologies}
+   352→   352→                      emptyText="No technologies suggested."
+   353→   353→                    />
+   354→   354→                  </Rise3D>
+   355→   355→                </div>
+   356→   356→
+   357→   357→                {/* c) Career roadmap timeline */}
+   358→   358→                <Rise3D delay={0.18}>
+   359→   359→                  <Card className={GLASS}>
+   360→   360→                    <CardHeader>
+   361→   361→                      <CardTitle className="text-base text-white">Career Roadmap</CardTitle>
+   362→   362→                      <CardDescription className="text-slate-500">
+   363→   363→                        A phased plan — hit each milestone before moving on.
+   364→   364→                      </CardDescription>
+   365→   365→                    </CardHeader>
+   366→   366→                    <CardContent>
+   367→   367→                      {profile.roadmap.length > 0 ? (
+   368→   368→                        <ol className="relative space-y-6 border-l border-white/[0.08] pl-6">
+   369→   369→                          {profile.roadmap.map((step, i) => (
+   370→   370→                            <li key={`${step.phase}-${i}`} className="relative">
+   371→   371→                              <span
+   372→   372→                                className="absolute -left-[36px] top-1 flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 text-[10px] font-bold text-white shadow-[0_0_14px_-2px_rgba(139,92,246,0.7)]"
+   373→   373→                                aria-hidden
+   374→   374→                              >
+   375→   375→                                {i + 1}
+   376→   376→                              </span>
+   377→   377→                              <div className="space-y-2.5 rounded-lg border border-white/[0.05] bg-white/[0.02] p-4">
+   378→   378→                                <div className="flex flex-wrap items-center justify-between gap-2">
+   379→   379→                                  <h3 className="text-sm font-semibold text-white">{step.phase}</h3>
+   380→   380→                                  <Badge variant="outline" className="border-cyan-400/30 bg-cyan-400/10 text-cyan-300">
+   381→   381→                                    {step.timeframe}
+   382→   382→                                  </Badge>
+   383→   383→                                </div>
+   384→   384→                                <p className="text-sm text-slate-400">{step.focus}</p>
+   385→   385→                                {step.milestones.length > 0 && (
+   386→   386→                                  <ul className="space-y-1.5">
+   387→   387→                                    {step.milestones.map((m, j) => (
+   388→   388→                                      <li key={j} className="flex items-start gap-2 text-sm text-slate-300">
+   389→   389→                                        <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400" aria-hidden />
+   390→   390→                                        <span className="text-pretty">{m}</span>
+   391→   391→                                      </li>
+   392→   392→                                    ))}
+   393→   393→                                  </ul>
+   394→   394→                                )}
+   395→   395→                              </div>
+   396→   396→                            </li>
+   397→   397→                          ))}
+   398→   398→                        </ol>
+   399→   399→                      ) : (
+   400→   400→                        <p className="py-4 text-center text-sm text-slate-500">No roadmap was generated.</p>
+   401→   401→                      )}
+   402→   402→                    </CardContent>
+   403→   403→                  </Card>
+   404→   404→                </Rise3D>
+   405→   405→
+   406→   406→                {/* d) Learning + certifications */}
+   407→   407→                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+   408→   408→                  <Rise3D delay={0.22} className="h-full">
+   409→   409→                    <Card className={cn(GLASS, 'h-full')}>
+   410→   410→                      <CardHeader className="pb-3">
+   411→   411→                        <CardTitle className="flex items-center gap-2 text-base text-white">
+   412→   412→                          <Lightbulb className="h-4 w-4 text-amber-300" aria-hidden /> Learning Recommendations
+   413→   413→                        </CardTitle>
+   414→   414→                        <CardDescription className="text-slate-500">What to study next, and why it matters.</CardDescription>
+   415→   415→                      </CardHeader>
+   416→   416→                      <CardContent>
+   417→   417→                        {profile.learning.length > 0 ? (
+   418→   418→                          <div className="max-h-96 space-y-3 overflow-y-auto pr-1 [scrollbar-color:rgba(255,255,255,0.15)_transparent] [scrollbar-width:thin]">
+   419→   419→                            {profile.learning.map((item, i) => (
+   420→   420→                              <div key={`${item.topic}-${i}`} className="space-y-1.5 rounded-lg border border-white/[0.05] bg-white/[0.02] p-3.5">
+   421→   421→                                <p className="text-sm font-semibold text-slate-100">{item.topic}</p>
+   422→   422→                                <p className="flex items-start gap-1.5 text-xs text-violet-300">
+   423→   423→                                  <BookOpen className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+   424→   424→                                  <span>{item.resources}</span>
+   425→   425→                                </p>
+   426→   426→                                <p className="text-xs leading-relaxed text-slate-500">{item.why}</p>
+   427→   427→                              </div>
+   428→   428→                            ))}
+   429→   429→                          </div>
+   430→   430→                        ) : (
+   431→   431→                          <p className="text-sm text-slate-500">No learning recommendations.</p>
+   432→   432→                        )}
+   433→   433→                      </CardContent>
+   434→   434→                    </Card>
+   435→   435→                  </Rise3D>
+   436→   436→                  <Rise3D delay={0.26} className="h-full">
+   437→   437→                    <Card className={cn(GLASS, 'h-full')}>
+   438→   438→                      <CardHeader className="pb-3">
+   439→   439→                        <CardTitle className="flex items-center gap-2 text-base text-white">
+   440→   440→                          <Award className="h-4 w-4 text-fuchsia-300" aria-hidden /> Certifications Worth Pursuing
+   441→   441→                        </CardTitle>
+   442→   442→                        <CardDescription className="text-slate-500">Credentials that strengthen your profile.</CardDescription>
+   443→   443→                      </CardHeader>
+   444→   444→                      <CardContent>
+   445→   445→                        {profile.certifications.length > 0 ? (
+   446→   446→                          <div className="max-h-96 space-y-3 overflow-y-auto pr-1 [scrollbar-color:rgba(255,255,255,0.15)_transparent] [scrollbar-width:thin]">
+   447→   447→                            {profile.certifications.map((cert, i) => (
+   448→   448→                              <div key={`${cert.name}-${i}`} className="space-y-1.5 rounded-lg border border-white/[0.05] bg-white/[0.02] p-3.5">
+   449→   449→                                <div className="flex flex-wrap items-center justify-between gap-2">
+   450→   450→                                  <p className="min-w-0 text-sm font-semibold text-slate-100">{cert.name}</p>
+   451→   451→                                  <Badge variant="outline" className="shrink-0 border-cyan-400/30 bg-cyan-400/10 text-cyan-300">
+   452→   452→                                    {cert.provider}
+   453→   453→                                  </Badge>
+   454→   454→                                </div>
+   455→   455→                                <p className="text-xs leading-relaxed text-slate-500">{cert.why}</p>
+   456→   456→                              </div>
+   457→   457→                            ))}
+   458→   458→                          </div>
+   459→   459→                        ) : (
+   460→   460→                          <p className="text-sm text-slate-500">No certifications suggested.</p>
+   461→   461→                        )}
+   462→   462→                      </CardContent>
+   463→   463→                    </Card>
+   464→   464→                  </Rise3D>
+   465→   465→                </div>
+   466→   466→
+   467→   467→                {/* e) Projects + interview topics */}
+   468→   468→                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+   469→   469→                  <Rise3D delay={0.3} className="h-full">
+   470→   470→                    <Card className={cn(GLASS, 'h-full')}>
+   471→   471→                      <CardHeader className="pb-3">
+   472→   472→                        <CardTitle className="flex items-center gap-2 text-base text-white">
+   473→   473→                          <FolderGit2 className="h-4 w-4 text-violet-300" aria-hidden /> Projects to Build
+   474→   474→                        </CardTitle>
+   475→   475→                        <CardDescription className="text-slate-500">
+   476→   476→                          Portfolio pieces that prove the skills above.
+   477→   477→                        </CardDescription>
+   478→   478→                      </CardHeader>
+   479→   479→                      <CardContent>
+   480→   480→                        {profile.projectsToBuild.length > 0 ? (
+   481→   481→                          <ol className="space-y-2.5">
+   482→   482→                            {profile.projectsToBuild.map((p, i) => (
+   483→   483→                              <li key={i} className="flex items-start gap-2.5 text-sm text-slate-300">
+   484→   484→                                <span
+   485→   485→                                  className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-500/20 text-[10px] font-bold text-violet-300"
+   486→   486→                                  aria-hidden
+   487→   487→                                >
+   488→   488→                                  {i + 1}
+   489→   489→                                </span>
+   490→   490→                                <span className="text-pretty">{p}</span>
+   491→   491→                              </li>
+   492→   492→                            ))}
+   493→   493→                          </ol>
+   494→   494→                        ) : (
+   495→   495→                          <p className="text-sm text-slate-500">No project ideas suggested.</p>
+   496→   496→                        )}
+   497→   497→                      </CardContent>
+   498→   498→                    </Card>
+   499→   499→                  </Rise3D>
+   500→   500→                  <Rise3D delay={0.34} className="h-full">
+   501→   501→                    <Card className={cn(GLASS, 'h-full')}>
+   502→   502→                      <CardHeader className="pb-3">
+   503→   503→                        <CardTitle className="flex items-center gap-2 text-base text-white">
+   504→   504→                          <MessagesSquare className="h-4 w-4 text-cyan-300" aria-hidden /> Interview Topics
+   505→   505→                        </CardTitle>
+   506→   506→                        <CardDescription className="text-slate-500">Be ready to discuss these confidently.</CardDescription>
+   507→   507→                      </CardHeader>
+   508→   508→                      <CardContent>
+   509→   509→                        <div className="max-h-52 overflow-y-auto pr-0.5 [scrollbar-color:rgba(255,255,255,0.15)_transparent] [scrollbar-width:thin]">
+   510→   510→                          {profile.interviewTopics.length > 0 ? (
+   511→   511→                            <div className="flex flex-wrap gap-1.5">
+   512→   512→                              {profile.interviewTopics.map((t, i) => (
+   513→   513→                                <Chip key={`${t}-${i}`} label={t} className={CHIP.cyan} />
+   514→   514→                              ))}
+   515→   515→                            </div>
+   516→   516→                          ) : (
+   517→   517→                            <p className="text-sm text-slate-500">No interview topics suggested.</p>
+   518→   518→                          )}
+   519→   519→                        </div>
+   520→   520→                      </CardContent>
+   521→   521→                    </Card>
+   522→   522→                  </Rise3D>
+   523→   523→                </div>
+   524→   524→              </div>
+   525→   525→            ) : (
+   526→   526→              /* Discussion-ready empty state */
+   527→   527→              <Card className={cn(GLASS, 'border-dashed')}>
+   528→   528→                <CardContent className="flex flex-col items-center gap-3 py-14 text-center">
+   529→   529→                  <Float3D duration={5} wobble={3}>
+   530→   530→                    <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/[0.04] text-slate-400" aria-hidden>
+   531→   531→                      <Compass className="h-7 w-7" />
+   532→   532→                    </span>
+   533→   533→                  </Float3D>
+   534→   534→                  <p className="max-w-md text-sm text-slate-400">
+   535→   535→                    Your discussion-ready career profile will appear here — recommended roles, skills in demand, a phased
+   536→   536→                    roadmap, learning picks and interview prep, all in one place.
+   537→   537→                  </p>
+   538→   538→                </CardContent>
+   539→   539→              </Card>
+   540→   540→            )}
+   541→   541→          </>
+   542→   542→        )}
+   543→   543→      </div>
+   544→   544→    </AppShell>
+   545→   545→  );
+   546→   546→}
+   547→   547→

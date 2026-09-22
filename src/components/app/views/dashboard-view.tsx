@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import type { ElementType, ReactNode } from 'react';
 import { toast } from 'sonner';
 import { AppShell } from '@/components/app/app-shell';
 import { useAuthStore } from '@/stores/auth-store';
@@ -10,13 +11,12 @@ import { apiFetch, downloadFile } from '@/lib/client/api';
 import { NewResumeDialog } from '@/components/app/new-resume-dialog';
 import { ViewResumeDialog } from '@/components/app/view-resume-dialog';
 import { LoadingButton } from '@/components/app/loading-button';
+import type { DashboardSummary } from '@/types/ai-tools';
+import { TEMPLATE_LABELS, type ResumeTemplate } from '@/types/resume';
 import { Float3D, Rise3D, Tilt3D } from '@/components/app/three-d/motion';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,41 +42,60 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { TEMPLATE_LABELS, type ResumeTemplate } from '@/types/resume';
-import type { DashboardSummary } from '@/types/ai-tools';
 import {
-  Plus,
-  MoreVertical,
-  Pencil,
-  Eye,
-  Copy,
-  Trash2,
-  Download,
+  Activity,
+  AlertTriangle,
+  ArrowRight,
+  BadgeCheck,
+  BriefcaseBusiness,
+  CheckCircle2,
   Code2,
-  Files,
-  ScanSearch,
-  Sparkles,
-  History,
+  Copy,
+  Download,
+  Eye,
+  FilePlus2,
   FileText,
   FolderOpen,
-  FilePlus2,
-  Upload,
-  Wand2,
   Gauge,
-  MailOpen,
-  Activity as ActivityIcon,
-  BriefcaseBusiness,
-  Lightbulb,
-  RefreshCw,
-  ArrowRight,
-  Target,
-  UserRound,
+  History,
   ListChecks,
-  TrendingUp,
-  TrendingDown,
-  Minus,
+  Loader2,
+  Mail,
+  MoreVertical,
+  Pencil,
+  Plus,
+  RefreshCw,
+  ScanSearch,
+  Sparkles,
+  Trash2,
+  Upload,
+  UserCheck,
+  Wand2,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+
+/* ─── Midnight Glass design system (matches feat-7/feat-8 recipes) ──────────── */
+
+const GLASS =
+  'relative overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.04] backdrop-blur-xl';
+
+const GRADIENT_CTA =
+  'min-h-[44px] bg-gradient-to-r from-violet-600 via-fuchsia-600 to-cyan-500 font-semibold text-white shadow-[0_10px_36px_-10px_rgba(139,92,246,0.65)] transition-all duration-200 hover:-translate-y-0.5 hover:from-violet-500 hover:via-fuchsia-500 hover:to-cyan-400 hover:shadow-[0_16px_48px_-12px_rgba(139,92,246,0.8)]';
+
+const GLASS_BTN =
+  'min-h-[44px] border border-white/[0.1] bg-white/[0.04] text-slate-200 backdrop-blur-xl transition-all duration-200 hover:border-white/25 hover:bg-white/[0.09] hover:text-white';
+
+const CHIP_VIOLET =
+  'bg-gradient-to-br from-violet-500/25 to-violet-500/5 text-violet-300 ring-1 ring-inset ring-violet-300/20';
+const CHIP_FUCHSIA =
+  'bg-gradient-to-br from-fuchsia-500/25 to-fuchsia-500/5 text-fuchsia-300 ring-1 ring-inset ring-fuchsia-300/20';
+const CHIP_CYAN =
+  'bg-gradient-to-br from-cyan-500/25 to-cyan-500/5 text-cyan-300 ring-1 ring-inset ring-cyan-300/20';
+const CHIP_AMBER =
+  'bg-gradient-to-br from-amber-500/25 to-amber-500/5 text-amber-300 ring-1 ring-inset ring-amber-300/20';
+const CHIP_ROSE =
+  'bg-gradient-to-br from-rose-500/25 to-rose-500/5 text-rose-300 ring-1 ring-inset ring-rose-300/20';
+const CHIP_SLATE =
+  'bg-white/[0.05] text-slate-300 ring-1 ring-inset ring-white/10';
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -90,156 +109,726 @@ function timeAgo(iso: string): string {
   return new Date(iso).toLocaleDateString();
 }
 
-// ─── Score ring ──────────────────────────────────────────────────────────────
-
-function ScoreRing({ value, size = 84, label }: { value: number; size?: number; label?: string }) {
-  const stroke = 7;
-  const r = (size - stroke) / 2;
-  const c = 2 * Math.PI * r;
-  const pct = Math.max(0, Math.min(100, value));
+/** Top sheen line for glass panels. */
+function Sheen() {
   return (
-    <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="-rotate-90" role="img" aria-label={label ?? `${pct} out of 100`}>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={stroke} />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          fill="none"
-          stroke="url(#ringGrad)"
-          strokeWidth={stroke}
-          strokeLinecap="round"
-          strokeDasharray={`${(pct / 100) * c} ${c}`}
-          className="transition-[stroke-dasharray] duration-700"
+    <span
+      aria-hidden
+      className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"
+    />
+  );
+}
+
+/** Dependency-free deterministic SVG sparkline for the ATS score history. */
+function AtsSparkline({ points }: { points: number[] }) {
+  const w = 120;
+  const h = 36;
+  const pad = 3;
+  const min = Math.min(...points);
+  const max = Math.max(...points);
+  const range = max - min || 1;
+  const stepX = (w - pad * 2) / (points.length - 1);
+  const coords = points.map((score, i) => {
+    const x = pad + i * stepX;
+    const y = pad + (1 - (score - min) / range) * (h - pad * 2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  const [lastX, lastY] = coords[coords.length - 1].split(',');
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden className="overflow-visible">
+      <polyline
+        points={coords.join(' ')}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx={lastX} cy={lastY} r={2.5} className="fill-cyan-300" stroke="none" />
+    </svg>
+  );
+}
+
+/* ─── Overview: score cards ─────────────────────────────────────────────────── */
+
+function ScoreCard({
+  icon: Icon,
+  chip,
+  label,
+  value,
+  suffix = '',
+  caption,
+  progress,
+  barClass,
+  locked = false,
+  children,
+}: {
+  icon: ElementType;
+  chip: string;
+  label: string;
+  value: number | null;
+  suffix?: string;
+  caption: ReactNode;
+  progress: number | null;
+  barClass: string;
+  locked?: boolean;
+  children?: ReactNode;
+}) {
+  const pct = progress == null ? 0 : Math.max(0, Math.min(100, progress));
+  return (
+    <div className={GLASS + ' flex h-full flex-col p-5'}>
+      <Sheen />
+      <div className="flex items-start justify-between gap-2">
+        <span className={'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ' + chip}>
+          <Icon className="h-5 w-5" aria-hidden />
+        </span>
+        {children}
+      </div>
+      <p className="mt-3 text-xs font-medium uppercase tracking-[0.14em] text-slate-400">{label}</p>
+      <p className="mt-1 text-3xl font-semibold tabular-nums text-white">
+        {value == null ? '—' : value}
+        {value == null ? '' : suffix}
+      </p>
+      <div className="mt-1 min-h-[16px] text-xs text-slate-400">
+        {locked ? <span className="text-slate-500">Run the Analyzer to unlock</span> : caption}
+      </div>
+      <div
+        className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]"
+        role="progressbar"
+        aria-label={label}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={progress ?? undefined}
+      >
+        <div
+          className={'h-full rounded-full bg-gradient-to-r ' + barClass}
+          style={{ width: `${pct}%` }}
         />
-        <defs>
-          <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#8b5cf6" />
-            <stop offset="55%" stopColor="#d946ef" />
-            <stop offset="100%" stopColor="#22d3ee" />
-          </linearGradient>
-        </defs>
-      </svg>
-      <span className="absolute text-lg font-bold text-white">{pct}</span>
+      </div>
     </div>
   );
 }
 
-// ─── Glass panel recipe ──────────────────────────────────────────────────────
+/* ─── Overview: panels ──────────────────────────────────────────────────────── */
 
-const GLASS = 'border border-white/[0.07] bg-white/[0.03] backdrop-blur-xl';
-
-function ScoreCard({
-  title,
-  value,
-  hint,
-  icon: Icon,
-  delay,
-  children,
-}: {
-  title: string;
-  value: number | null;
-  hint: string;
-  icon: React.ElementType;
-  delay: number;
-  children?: React.ReactNode;
-}) {
+function KeywordGroup({ label, items, className }: { label: string; items: string[]; className: string }) {
+  if (items.length === 0) return null;
   return (
-    <Rise3D delay={delay} className="h-full">
-      <Tilt3D className="h-full" max={4}>
-        <Card className={cn('h-full', GLASS)} style={{ transformStyle: 'preserve-3d' }}>
-          <CardContent className="p-5">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-xs font-medium uppercase tracking-wider text-slate-500">{title}</p>
-                {value == null ? (
-                  <p className="mt-2 text-sm text-slate-500">No data yet</p>
-                ) : (
-                  <p className="mt-1.5 text-3xl font-bold leading-none text-white">
-                    {value}
-                    <span className="ml-0.5 text-sm font-medium text-slate-500">/100</span>
-                  </p>
-                )}
-                <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-slate-500">{hint}</p>
-                {children}
-              </div>
-              {value != null && <ScoreRing value={value} label={`${title}: ${value} of 100`} />}
-              {value == null && (
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-violet-500/15 text-violet-300">
-                  <Icon className="h-5 w-5" aria-hidden />
-                </span>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </Tilt3D>
-    </Rise3D>
-  );
-}
-
-function QuickAction({
-  icon: Icon,
-  title,
-  subtitle,
-  onClick,
-  tone,
-  delay,
-}: {
-  icon: React.ElementType;
-  title: string;
-  subtitle: string;
-  onClick: () => void;
-  tone: 'violet' | 'fuchsia' | 'cyan' | 'blue' | 'purple' | 'amber';
-  delay: number;
-}) {
-  const tones: Record<string, string> = {
-    violet: 'from-violet-600 to-violet-500 shadow-violet-600/40',
-    fuchsia: 'from-fuchsia-600 to-fuchsia-500 shadow-fuchsia-600/40',
-    cyan: 'from-cyan-600 to-cyan-500 shadow-cyan-600/40',
-    blue: 'from-blue-600 to-blue-500 shadow-blue-600/40',
-    purple: 'from-purple-600 to-purple-500 shadow-purple-600/40',
-    amber: 'from-amber-600 to-amber-500 shadow-amber-600/40',
-  };
-  return (
-    <Rise3D delay={delay} className="h-full">
-      <Tilt3D max={3.5} className="h-full">
-        <button
-          type="button"
-          onClick={onClick}
-          className={cn(
-            'group flex h-full min-h-[44px] w-full items-center gap-4 rounded-xl border border-white/[0.07] bg-white/[0.03] p-4 text-left backdrop-blur-xl transition-all duration-200',
-            'hover:-translate-y-0.5 hover:border-white/[0.14] hover:bg-white/[0.05] hover:shadow-[0_10px_40px_-12px_rgba(139,92,246,0.35)]',
-          )}
-        >
+    <div>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{label}</p>
+      <div className="mt-1.5 flex flex-wrap gap-1.5">
+        {items.map((keyword, i) => (
           <span
-            className={cn(
-              'flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br text-white transition-transform duration-300 group-hover:-rotate-3 group-hover:scale-110',
-              tones[tone],
-            )}
+            key={`${keyword}-${i}`}
+            className={'rounded-full border px-2.5 py-0.5 text-xs font-medium ' + className}
           >
-            <Icon className="h-5 w-5" aria-hidden />
+            {keyword}
           </span>
-          <span className="min-w-0">
-            <span className="block truncate font-semibold text-slate-100">{title}</span>
-            <span className="block truncate text-sm text-slate-500">{subtitle}</span>
-          </span>
-        </button>
-      </Tilt3D>
-    </Rise3D>
+        ))}
+      </div>
+    </div>
   );
 }
 
-const ACTIVITY_ICONS: Record<string, React.ElementType> = {
-  resume_created: FilePlus2,
-  analysis: Gauge,
-  job_match: Target,
-  cover_letter: MailOpen,
-  application: BriefcaseBusiness,
-  version_saved: History,
-  resume_optimized: Wand2,
+function AnalysisPanel({ analysis }: { analysis: DashboardSummary['latestAnalysis'] }) {
+  return (
+    <section className={GLASS + ' p-5 sm:p-6'}>
+      <Sheen />
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-base font-semibold text-white">Latest AI Analysis</h2>
+        {analysis && <span className="shrink-0 text-[11px] text-slate-500">{timeAgo(analysis.generatedAt)}</span>}
+      </div>
+
+      {analysis ? (
+        <>
+          <div className="mt-4 flex items-center gap-4">
+            <span className="flex shrink-0 flex-col items-center rounded-2xl border border-cyan-300/20 bg-gradient-to-br from-cyan-500/20 via-violet-500/10 to-transparent px-4 py-3">
+              <span className="text-3xl font-semibold tabular-nums text-white">{analysis.score}</span>
+              <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-300/80">
+                ATS
+              </span>
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-white" title={analysis.resumeTitle}>
+                {analysis.resumeTitle}
+              </p>
+              <p className="mt-1 text-xs text-slate-400">Newest scan with prioritized fixes and keyword coverage.</p>
+            </div>
+          </div>
+
+          {analysis.improvements.length > 0 && (
+            <ol className="mt-4 space-y-2">
+              {analysis.improvements.map((item, i) => (
+                <li
+                  key={`${item}-${i}`}
+                  className="flex items-start gap-2.5 rounded-xl border border-white/[0.05] bg-white/[0.02] p-3"
+                >
+                  <span className="mt-0.5 text-[11px] font-semibold tabular-nums text-slate-500">
+                    {String(i + 1).padStart(2, '0')}
+                  </span>
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" aria-hidden />
+                  <span className="min-w-0 text-sm text-slate-300">{item}</span>
+                </li>
+              ))}
+            </ol>
+          )}
+
+          {(analysis.keywordMatch.matched.length > 0 || analysis.keywordMatch.missing.length > 0) && (
+            <div className="mt-4 space-y-3">
+              <KeywordGroup
+                label="Matched keywords"
+                items={analysis.keywordMatch.matched}
+                className="border-cyan-400/30 bg-cyan-400/10 text-cyan-200"
+              />
+              <KeywordGroup
+                label="Missing keywords"
+                items={analysis.keywordMatch.missing}
+                className="border-rose-400/30 bg-rose-400/10 text-rose-200"
+              />
+            </div>
+          )}
+
+          <Button onClick={() => navigate('analyzer', analysis.resumeId)} className={GLASS_BTN + ' mt-5'}>
+            Open Analyzer <ArrowRight className="h-4 w-4" aria-hidden />
+          </Button>
+        </>
+      ) : (
+        <div className="mt-4 flex flex-col items-center gap-4 py-6 text-center">
+          <Float3D duration={5}>
+            <span className={'flex h-14 w-14 items-center justify-center rounded-2xl ' + CHIP_CYAN}>
+              <ScanSearch className="h-7 w-7" aria-hidden />
+            </span>
+          </Float3D>
+          <div>
+            <p className="text-sm font-medium text-white">No AI analysis yet</p>
+            <p className="mt-1 max-w-sm text-sm text-slate-400">
+              Run the AI Resume Analyzer to get an estimated ATS score, prioritized fixes and keyword coverage.
+            </p>
+          </div>
+          <Button onClick={() => navigate('analyzer')} className={GLASS_BTN}>
+            Run the Analyzer <ArrowRight className="h-4 w-4" aria-hidden />
+          </Button>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function RecommendationsPanel({ items }: { items: string[] }) {
+  return (
+    <section className={GLASS + ' p-5 sm:p-6'}>
+      <Sheen />
+      <h2 className="text-base font-semibold text-white">AI Recommendations</h2>
+      <ul className="mt-3 space-y-2">
+        {items.map((rec, i) => (
+          <li
+            key={`${rec}-${i}`}
+            className="flex items-start gap-3 rounded-xl border border-white/[0.05] bg-white/[0.02] p-3"
+          >
+            <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" aria-hidden />
+            <span className="min-w-0 text-sm leading-relaxed text-slate-300">{rec}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function RecentResumeRow({ resume }: { resume: DashboardSummary['recentResumes'][number] }) {
+  const [pdfBusy, setPdfBusy] = useState(false);
+
+  const downloadPdf = async () => {
+    setPdfBusy(true);
+    try {
+      await downloadFile(`/api/resumes/${resume.id}/pdf`, `${resume.title}.pdf`);
+      toast.success('PDF downloaded.');
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setPdfBusy(false);
+    }
+  };
+
+  const templateLabel = TEMPLATE_LABELS[resume.template as ResumeTemplate] ?? resume.template;
+
+  return (
+    <li className="group flex min-w-0 items-center gap-2 rounded-xl border border-transparent p-2 transition-colors hover:border-white/[0.07] hover:bg-white/[0.03]">
+      <button
+        type="button"
+        onClick={() => navigate('builder', resume.id)}
+        className="flex min-h-[44px] min-w-0 flex-1 items-center gap-3 rounded-lg text-left"
+      >
+        <span className={'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ' + CHIP_VIOLET}>
+          <FileText className="h-4 w-4" aria-hidden />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-medium text-white" title={resume.title}>
+            {resume.title}
+          </span>
+          <span className="mt-0.5 block truncate text-[11px] text-slate-500">
+            {templateLabel} · {resume.versions} version{resume.versions === 1 ? '' : 's'} · Updated{' '}
+            {timeAgo(resume.updatedAt)}
+          </span>
+        </span>
+        {resume.targetRole && (
+          <span className="hidden shrink-0 rounded-full border border-violet-400/30 bg-violet-400/10 px-2.5 py-0.5 text-[11px] font-medium text-violet-200 sm:inline-block">
+            {resume.targetRole}
+          </span>
+        )}
+      </button>
+      <button
+        type="button"
+        onClick={downloadPdf}
+        disabled={pdfBusy}
+        aria-label={`Download PDF of ${resume.title}`}
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-white/[0.06] hover:text-white disabled:opacity-50"
+      >
+        {pdfBusy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Download className="h-4 w-4" aria-hidden />}
+      </button>
+    </li>
+  );
+}
+
+function RecentResumesPanel({
+  resumes,
+  onCreate,
+}: {
+  resumes: DashboardSummary['recentResumes'];
+  onCreate: () => void;
+}) {
+  return (
+    <section className={GLASS + ' p-5 sm:p-6'}>
+      <Sheen />
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-base font-semibold text-white">Recent Resumes</h2>
+        {resumes.length > 0 && (
+          <button
+            type="button"
+            onClick={() => navigate('resumes')}
+            className="flex min-h-[44px] items-center gap-1 text-xs font-medium text-cyan-300 transition-colors hover:text-cyan-200"
+          >
+            View all <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+          </button>
+        )}
+      </div>
+
+      {resumes.length === 0 ? (
+        <div className="mt-2 flex flex-col items-center gap-4 py-6 text-center">
+          <Float3D duration={5}>
+            <span className={'flex h-14 w-14 items-center justify-center rounded-2xl ' + CHIP_VIOLET}>
+              <FileText className="h-7 w-7" aria-hidden />
+            </span>
+          </Float3D>
+          <div>
+            <p className="text-sm font-medium text-white">Create your first resume</p>
+            <p className="mt-1 max-w-sm text-sm text-slate-400">
+              Start from scratch or upload an existing resume — the AI studio takes it from there.
+            </p>
+          </div>
+          <Button onClick={onCreate} className={GRADIENT_CTA}>
+            <FilePlus2 className="h-4 w-4" aria-hidden /> Create Your First Resume
+          </Button>
+        </div>
+      ) : (
+        <ul className="mt-3 space-y-1.5">
+          {resumes.map((r) => (
+            <RecentResumeRow key={r.id} resume={r} />
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+const ACTIVITY_META: Record<string, { icon: ElementType; chip: string; dot: string }> = {
+  resume_created: { icon: FilePlus2, chip: CHIP_VIOLET, dot: 'bg-violet-400' },
+  created: { icon: FilePlus2, chip: CHIP_VIOLET, dot: 'bg-violet-400' },
+  resume_updated: { icon: Pencil, chip: CHIP_FUCHSIA, dot: 'bg-fuchsia-400' },
+  updated: { icon: Pencil, chip: CHIP_FUCHSIA, dot: 'bg-fuchsia-400' },
+  resume_optimized: { icon: Wand2, chip: CHIP_VIOLET, dot: 'bg-violet-400' },
+  analysis: { icon: ScanSearch, chip: CHIP_CYAN, dot: 'bg-cyan-400' },
+  application: { icon: BriefcaseBusiness, chip: CHIP_AMBER, dot: 'bg-amber-400' },
+  cover_letter: { icon: Mail, chip: CHIP_FUCHSIA, dot: 'bg-fuchsia-400' },
+  version_created: { icon: History, chip: CHIP_CYAN, dot: 'bg-cyan-400' },
+  version: { icon: History, chip: CHIP_CYAN, dot: 'bg-cyan-400' },
+  deleted: { icon: Trash2, chip: CHIP_ROSE, dot: 'bg-rose-400' },
 };
 
-// ─── Resume card (kept from existing feature) ────────────────────────────────
+function activityMeta(type: string) {
+  return ACTIVITY_META[type] ?? { icon: Activity, chip: CHIP_SLATE, dot: 'bg-slate-400' };
+}
+
+function ActivityPanel({ activities }: { activities: DashboardSummary['activities'] }) {
+  return (
+    <section className={GLASS + ' p-5'}>
+      <Sheen />
+      <h2 className="text-base font-semibold text-white">Recent Activity</h2>
+      {activities.length === 0 ? (
+        <p className="mt-3 text-sm text-slate-500">
+          No activity yet — resume and application actions will appear here.
+        </p>
+      ) : (
+        <ol className="mt-3 space-y-3">
+          {activities.map((a) => {
+            const meta = activityMeta(a.type);
+            const Icon = meta.icon;
+            return (
+              <li key={a.id} className="flex items-start gap-3">
+                <span className={'mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ' + meta.chip}>
+                  <Icon className="h-4 w-4" aria-hidden />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm leading-snug text-slate-300">{a.message}</p>
+                  <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-slate-500">
+                    <span aria-hidden className={'h-1.5 w-1.5 rounded-full ' + meta.dot} />
+                    {timeAgo(a.createdAt)}
+                  </p>
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+    </section>
+  );
+}
+
+function PipelinePanel({ stats }: { stats: DashboardSummary['stats'] }) {
+  const legend = [
+    { label: 'Applied', dot: 'bg-cyan-400' },
+    { label: 'Shortlisted', dot: 'bg-violet-400' },
+    { label: 'Interview', dot: 'bg-amber-400' },
+    { label: 'Selected', dot: 'bg-emerald-400' },
+    { label: 'Rejected', dot: 'bg-rose-400' },
+  ];
+  const cells = [
+    { label: 'Active', value: stats.activeApplications },
+    { label: 'Interviews', value: stats.interviewsScheduled },
+    { label: 'Total', value: stats.totalApplications },
+  ];
+  return (
+    <section className={GLASS + ' p-5'}>
+      <Sheen />
+      <h2 className="text-base font-semibold text-white">Application Pipeline</h2>
+      <div className="mt-4 grid grid-cols-3 gap-2">
+        {cells.map((cell) => (
+          <div key={cell.label} className="rounded-xl border border-white/[0.05] bg-white/[0.02] px-2 py-3 text-center">
+            <p className="text-2xl font-semibold tabular-nums text-white">{cell.value}</p>
+            <p className="mt-0.5 text-[11px] text-slate-400">{cell.label}</p>
+          </div>
+        ))}
+      </div>
+      <div className="mt-4 flex flex-wrap gap-x-3 gap-y-1.5">
+        {legend.map((item) => (
+          <span key={item.label} className="flex items-center gap-1.5 text-[11px] text-slate-400">
+            <span aria-hidden className={'h-1.5 w-1.5 rounded-full ' + item.dot} /> {item.label}
+          </span>
+        ))}
+      </div>
+      <Button onClick={() => navigate('tracker')} className={GLASS_BTN + ' mt-4 w-full'}>
+        Open Tracker <ArrowRight className="h-4 w-4" aria-hidden />
+      </Button>
+    </section>
+  );
+}
+
+/* ─── Overview: loading + error states ──────────────────────────────────────── */
+
+function SummarySkeleton() {
+  return (
+    <div role="status" className="mt-6 min-w-0">
+      <span className="sr-only">Loading dashboard…</span>
+      <div aria-hidden className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className={GLASS + ' h-44 animate-pulse p-5'}>
+            <div className="h-10 w-10 rounded-xl bg-white/[0.06]" />
+            <div className="mt-4 h-3 w-24 rounded bg-white/[0.05]" />
+            <div className="mt-2 h-8 w-20 rounded bg-white/[0.06]" />
+            <div className="mt-4 h-1.5 w-full rounded-full bg-white/[0.05]" />
+          </div>
+        ))}
+      </div>
+      <div aria-hidden className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+        {[0, 1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className={GLASS + ' h-[76px] animate-pulse p-3.5'}>
+            <div className="h-9 w-9 rounded-lg bg-white/[0.06]" />
+          </div>
+        ))}
+      </div>
+      <div aria-hidden className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-5">
+        <div className="space-y-4 lg:col-span-3">
+          <div className={GLASS + ' h-72 animate-pulse'} />
+          <div className={GLASS + ' h-64 animate-pulse'} />
+        </div>
+        <div className="space-y-4 lg:col-span-2">
+          <div className={GLASS + ' h-64 animate-pulse'} />
+          <div className={GLASS + ' h-56 animate-pulse'} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ErrorPanel({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div
+      role="alert"
+      className="relative mt-6 overflow-hidden rounded-2xl border border-rose-400/30 bg-rose-500/[0.06] p-5 backdrop-blur-xl"
+    >
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-rose-300/40 to-transparent"
+      />
+      <div className="flex flex-wrap items-center gap-4">
+        <span className={'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ' + CHIP_ROSE}>
+          <AlertTriangle className="h-5 w-5" aria-hidden />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-rose-100">Could not load your dashboard</p>
+          <p className="mt-0.5 text-sm text-rose-200/80">{message}</p>
+        </div>
+        <Button onClick={onRetry} className={GLASS_BTN}>
+          <RefreshCw className="h-4 w-4" aria-hidden /> Retry
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Overview: Dashboard Home ──────────────────────────────────────────────── */
+
+function OverviewHome({ onCreate }: { onCreate: () => void }) {
+  const authUser = useAuthStore((s) => s.user);
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      setSummary(await apiFetch<DashboardSummary>('/api/dashboard/summary'));
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Refetches every time the overview section mounts.
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const firstName = (summary?.user.name ?? authUser?.name ?? 'there').trim().split(/\s+/)[0] || 'there';
+  const s = summary;
+
+  const scoreCards = s
+    ? [
+        {
+          key: 'ats',
+          icon: Gauge,
+          chip: CHIP_CYAN,
+          barClass: 'from-cyan-400 to-violet-500',
+          label: 'ATS Score',
+          value: s.scores.ats,
+          suffix: '',
+          progress: s.scores.ats,
+          locked: s.scores.ats == null,
+          caption: (
+            <span className="flex min-w-0 items-center gap-1.5">
+              <span className="truncate">
+                {s.scores.atsResumeTitle ? `Best: ${s.scores.atsResumeTitle}` : 'Latest analysis'}
+              </span>
+              {s.scores.atsTargetRole && (
+                <span className="shrink-0 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2 py-0.5 text-[10px] font-medium text-cyan-200">
+                  {s.scores.atsTargetRole}
+                </span>
+              )}
+            </span>
+          ),
+        },
+        {
+          key: 'quality',
+          icon: BadgeCheck,
+          chip: CHIP_VIOLET,
+          barClass: 'from-violet-400 to-fuchsia-500',
+          label: 'Resume Quality',
+          value: s.scores.quality,
+          suffix: '',
+          progress: s.scores.quality,
+          locked: s.scores.quality == null,
+          caption: <span className="block truncate">{s.scores.qualityResumeTitle ?? 'Latest resume'}</span>,
+        },
+        {
+          key: 'completion',
+          icon: ListChecks,
+          chip: CHIP_FUCHSIA,
+          barClass: 'from-fuchsia-400 to-violet-500',
+          label: 'Resume Completion',
+          value: s.scores.completion,
+          suffix: '%',
+          progress: s.scores.completion,
+          locked: false,
+          caption: <span className="block truncate">Content readiness of your latest resume</span>,
+        },
+        {
+          key: 'profile',
+          icon: UserCheck,
+          chip: CHIP_AMBER,
+          barClass: 'from-fuchsia-400 to-amber-400',
+          label: 'Profile Completeness',
+          value: s.scores.profileCompleteness,
+          suffix: '%',
+          progress: s.scores.profileCompleteness,
+          locked: false,
+          caption: <span className="block truncate">Personal info across your resume</span>,
+        },
+      ]
+    : [];
+
+  const quickActions: { key: string; icon: ElementType; chip: string; label: string; hint: string; action: () => void }[] = [
+    { key: 'create', icon: FilePlus2, chip: CHIP_VIOLET, label: 'Create Resume', hint: 'Start blank or from sample data', action: onCreate },
+    { key: 'upload', icon: Upload, chip: CHIP_CYAN, label: 'Upload Resume', hint: 'PDF or DOCX recreated by AI', action: onCreate },
+    { key: 'analyze', icon: ScanSearch, chip: CHIP_FUCHSIA, label: 'Analyze Resume', hint: 'Estimated ATS score and fixes', action: () => navigate('analyzer') },
+    { key: 'improve', icon: Wand2, chip: CHIP_VIOLET, label: 'Improve Resume', hint: 'AI rewrites and polishing', action: () => navigate('rewriter') },
+    { key: 'ats', icon: Gauge, chip: CHIP_CYAN, label: 'ATS Scores', hint: 'Score history and analytics', action: () => navigate('analytics') },
+    { key: 'cover', icon: Mail, chip: CHIP_AMBER, label: 'Cover Letter', hint: 'Tailored AI-drafted letters', action: () => navigate('coverletter') },
+  ];
+
+  return (
+    <div className="min-w-0">
+      {/* Header */}
+      <header className="flex flex-wrap items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-300/80">
+            AI CAREER COMMAND CENTER
+          </p>
+          <h1 className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">
+            Welcome back,{' '}
+            <span className="bg-gradient-to-r from-violet-400 via-fuchsia-400 to-cyan-300 bg-clip-text text-transparent drop-shadow-[0_0_28px_rgba(167,139,250,0.35)]">
+              {firstName}
+            </span>
+          </h1>
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-slate-400">
+            {mounted && <span>{new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</span>}
+            {s && (
+              <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2.5 py-0.5 text-[11px] font-medium text-slate-300">
+                Member since {new Date(s.user.memberSince).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
+              </span>
+            )}
+          </div>
+        </div>
+        <Button onClick={onCreate} className={GRADIENT_CTA}>
+          <Plus className="h-4 w-4" aria-hidden /> Create New Resume
+        </Button>
+      </header>
+
+      {/* Background refresh failed but we still have data — compact strip */}
+      {error && s && (
+        <div
+          role="alert"
+          className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-rose-400/30 bg-rose-500/[0.06] px-4 py-3 text-sm backdrop-blur-xl"
+        >
+          <AlertTriangle className="h-4 w-4 shrink-0 text-rose-300" aria-hidden />
+          <span className="min-w-0 flex-1 text-rose-200/90">Refresh failed: {error}</span>
+          <button
+            type="button"
+            onClick={() => void load()}
+            className="min-h-[36px] rounded-lg border border-rose-300/30 bg-rose-400/10 px-3 text-xs font-medium text-rose-100 transition-colors hover:bg-rose-400/20"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* First load */}
+      {loading && !s && <SummarySkeleton />}
+
+      {/* Failed with nothing to show */}
+      {!loading && error && !s && <ErrorPanel message={error} onRetry={() => void load()} />}
+
+      {/* Content */}
+      {s && (
+        <>
+          {/* Score grid */}
+          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {scoreCards.map((card, i) => (
+              <Rise3D key={card.key} delay={i * 0.06} className="h-full">
+                <Tilt3D className="h-full" max={3.5}>
+                  <ScoreCard
+                    icon={card.icon}
+                    chip={card.chip}
+                    label={card.label}
+                    value={card.value}
+                    suffix={card.suffix}
+                    caption={card.caption}
+                    progress={card.progress}
+                    barClass={card.barClass}
+                    locked={card.locked}
+                  >
+                    {card.key === 'ats' && s.scores.atsHistory.length >= 2 && (
+                      <span className="shrink-0 text-cyan-300/90">
+                        <AtsSparkline points={s.scores.atsHistory.map((h) => h.score)} />
+                      </span>
+                    )}
+                  </ScoreCard>
+                </Tilt3D>
+              </Rise3D>
+            ))}
+          </div>
+
+          {/* Quick actions */}
+          <h2 className="sr-only">Quick actions</h2>
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+            {quickActions.map((action, i) => {
+              const Icon = action.icon;
+              return (
+                <Rise3D key={action.key} delay={0.1 + i * 0.04} className="h-full">
+                  <Tilt3D className="h-full" max={3.5}>
+                    <button
+                      type="button"
+                      onClick={action.action}
+                      className="flex min-h-[44px] h-full w-full items-center gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.03] p-3.5 text-left backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:border-violet-300/25 hover:bg-white/[0.05]"
+                    >
+                      <span className={'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ' + action.chip}>
+                        <Icon className="h-4 w-4" aria-hidden />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-medium text-white">{action.label}</span>
+                        <span className="block truncate text-[11px] text-slate-400">{action.hint}</span>
+                      </span>
+                    </button>
+                  </Tilt3D>
+                </Rise3D>
+              );
+            })}
+          </div>
+
+          {/* Main + side columns */}
+          <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-5">
+            <div className="min-w-0 space-y-4 lg:col-span-3">
+              <AnalysisPanel analysis={s.latestAnalysis} />
+              {s.recommendations.length > 0 && <RecommendationsPanel items={s.recommendations} />}
+              <RecentResumesPanel resumes={s.recentResumes} onCreate={onCreate} />
+            </div>
+            <div className="min-w-0 space-y-4 lg:col-span-2">
+              <ActivityPanel activities={s.activities} />
+              <PipelinePanel stats={s.stats} />
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ─── Resumes section ───────────────────────────────────────────────────────── */
 
 function ResumeCard({
   resume,
@@ -284,83 +873,96 @@ function ResumeCard({
 
   return (
     <Tilt3D className="h-full" max={3}>
-      <Card className={cn('flex h-full min-w-0 flex-col transition-shadow hover:shadow-[0_10px_40px_-12px_rgba(139,92,246,0.35)]', GLASS)}>
-        <CardHeader className="pb-3">
-          <div className="flex min-w-0 items-start justify-between gap-2">
-            <div className="min-w-0">
-              <CardTitle className="truncate text-base text-slate-100" title={resume.title}>
-                {resume.title}
-              </CardTitle>
-              <CardDescription className="mt-1 text-slate-500">Updated {timeAgo(resume.updatedAt)}</CardDescription>
-            </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="min-h-[40px] min-w-[40px] shrink-0 text-slate-400 hover:bg-white/[0.06] hover:text-white" aria-label={`Actions for ${resume.title}`}>
-                  <MoreVertical className="h-4 w-4" aria-hidden />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 border-white/[0.08] bg-[#0a0e1f] text-slate-200">
-                <DropdownMenuItem onClick={() => navigate('builder', resume.id)} className="focus:bg-white/[0.06] focus:text-white">
-                  <Pencil className="h-4 w-4" aria-hidden /> Edit
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onView(resume)} className="focus:bg-white/[0.06] focus:text-white">
-                  <Eye className="h-4 w-4" aria-hidden /> View
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={async () => {
-                    try {
-                      await duplicate(resume.id);
-                      toast.success('Resume duplicated.');
-                    } catch (e) {
-                      toast.error((e as Error).message);
-                    }
-                  }}
-                  className="focus:bg-white/[0.06] focus:text-white"
-                >
-                  <Copy className="h-4 w-4" aria-hidden /> Duplicate
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => {
-                    setRenameValue(resume.title);
-                    setRenameOpen(true);
-                  }}
-                  className="focus:bg-white/[0.06] focus:text-white"
-                >
-                  <Pencil className="h-4 w-4" aria-hidden /> Rename
-                </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-white/[0.08]" />
-                <DropdownMenuItem onClick={downloadPdf} disabled={pdfBusy} className="focus:bg-white/[0.06] focus:text-white">
-                  <Download className="h-4 w-4" aria-hidden /> {pdfBusy ? 'Creating PDF…' : 'Download PDF'}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={downloadLatex} disabled={latexBusy} className="focus:bg-white/[0.06] focus:text-white">
-                  <Code2 className="h-4 w-4" aria-hidden /> {latexBusy ? 'Generating…' : 'Generate LaTeX'}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-white/[0.08]" />
-                <DropdownMenuItem onClick={() => onDelete(resume)} className="text-red-400 focus:bg-white/[0.06] focus:text-red-300">
-                  <Trash2 className="h-4 w-4" aria-hidden /> Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+      <div
+        className={
+          GLASS +
+          ' flex h-full min-w-0 flex-col p-5 transition-all duration-300 hover:border-violet-300/25 hover:bg-white/[0.05]'
+        }
+      >
+        <Sheen />
+        <div className="flex min-w-0 items-start justify-between gap-2">
+          <div className="min-w-0">
+            <h3 className="truncate text-base font-semibold text-white" title={resume.title}>
+              {resume.title}
+            </h3>
+            <p className="mt-1 text-xs text-slate-400">Updated {timeAgo(resume.updatedAt)}</p>
           </div>
-        </CardHeader>
-        <CardContent className="mt-auto flex flex-wrap items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="min-h-[44px] min-w-[44px] shrink-0 text-slate-300 hover:bg-white/[0.06] hover:text-white"
+                aria-label={`Actions for ${resume.title}`}
+              >
+                <MoreVertical className="h-4 w-4" aria-hidden />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => navigate('builder', resume.id)}>
+                <Pencil className="h-4 w-4" aria-hidden /> Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onView(resume)}>
+                <Eye className="h-4 w-4" aria-hidden /> View
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={async () => {
+                  try {
+                    await duplicate(resume.id);
+                    toast.success('Resume duplicated.');
+                  } catch (e) {
+                    toast.error((e as Error).message);
+                  }
+                }}
+              >
+                <Copy className="h-4 w-4" aria-hidden /> Duplicate
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  setRenameValue(resume.title);
+                  setRenameOpen(true);
+                }}
+              >
+                <Pencil className="h-4 w-4" aria-hidden /> Rename
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={downloadPdf} disabled={pdfBusy}>
+                <Download className="h-4 w-4" aria-hidden /> {pdfBusy ? 'Creating PDF…' : 'Download PDF'}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={downloadLatex} disabled={latexBusy}>
+                <Code2 className="h-4 w-4" aria-hidden /> {latexBusy ? 'Generating…' : 'Generate LaTeX'}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => onDelete(resume)} className="text-destructive focus:text-destructive">
+                <Trash2 className="h-4 w-4" aria-hidden /> Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        <div className="mt-auto flex flex-wrap items-center gap-2 pt-4">
           {resume.targetRole ? (
-            <Badge variant="secondary" className="border-transparent bg-violet-500/15 text-violet-200">
+            <span className="rounded-full border border-violet-400/30 bg-violet-400/10 px-2.5 py-0.5 text-[11px] font-medium text-violet-200">
               {resume.targetRole}
-            </Badge>
+            </span>
           ) : (
-            <Badge variant="outline" className="border-white/10 text-slate-400">
+            <span className="rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-0.5 text-[11px] text-slate-500">
               No target role
-            </Badge>
+            </span>
           )}
-          <Badge variant="outline" className="border-white/10 text-slate-400">
+          <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2.5 py-0.5 text-[11px] text-slate-300">
             {TEMPLATE_LABELS[resume.template] ?? resume.template}
-          </Badge>
-          <span className="text-xs text-slate-500">
+          </span>
+          <span className="text-[11px] text-slate-500">
             {resume._count?.versions ?? 0} version{(resume._count?.versions ?? 0) === 1 ? '' : 's'}
           </span>
           <div className="ml-auto flex gap-1.5">
-            <Button size="sm" variant="outline" className="min-h-[36px] border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.08] hover:text-white" onClick={() => onView(resume)}>
+            <Button
+              size="sm"
+              variant="outline"
+              className="min-h-[36px] border-white/[0.1] bg-white/[0.04] text-slate-200 hover:bg-white/[0.08] hover:text-white"
+              onClick={() => onView(resume)}
+            >
               <Eye className="h-3.5 w-3.5" aria-hidden /> View
             </Button>
             <Button
@@ -371,24 +973,21 @@ function ResumeCard({
               <Pencil className="h-3.5 w-3.5" aria-hidden /> Edit
             </Button>
           </div>
-        </CardContent>
+        </div>
 
         <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
-          <DialogContent className="border-white/[0.08] bg-[#0a0e1f] sm:max-w-sm">
+          <DialogContent className="sm:max-w-sm">
             <DialogHeader>
-              <DialogTitle className="text-slate-100">Rename resume</DialogTitle>
-              <DialogDescription className="text-slate-500">Give this resume a descriptive name.</DialogDescription>
+              <DialogTitle>Rename resume</DialogTitle>
+              <DialogDescription>Give this resume a descriptive name.</DialogDescription>
             </DialogHeader>
             <div className="space-y-1.5">
-              <Label htmlFor="rename-input" className="text-slate-300">
-                Resume name
-              </Label>
+              <Label htmlFor="rename-input">Resume name</Label>
               <Input
                 id="rename-input"
                 value={renameValue}
                 onChange={(e) => setRenameValue(e.target.value)}
                 maxLength={80}
-                className="border-white/10 bg-white/[0.04] text-slate-100 placeholder:text-slate-600"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && renameValue.trim()) {
                     setRenaming(true);
@@ -404,7 +1003,7 @@ function ResumeCard({
               />
             </div>
             <DialogFooter>
-              <Button variant="outline" className="border-white/10 bg-transparent text-slate-300 hover:bg-white/[0.06] hover:text-white" onClick={() => setRenameOpen(false)}>
+              <Button variant="outline" onClick={() => setRenameOpen(false)}>
                 Cancel
               </Button>
               <LoadingButton
@@ -427,42 +1026,101 @@ function ResumeCard({
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </Card>
+      </div>
     </Tilt3D>
   );
 }
 
-// ─── Main view ───────────────────────────────────────────────────────────────
+function EmptyResumes({ onCreate }: { onCreate: () => void }) {
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-dashed border-white/[0.12] bg-white/[0.02] p-6 backdrop-blur-xl">
+      <Sheen />
+      <div className="flex flex-col items-center justify-center gap-4 py-10 text-center">
+        <Float3D duration={5}>
+          <span className={'flex h-14 w-14 items-center justify-center rounded-2xl ' + CHIP_VIOLET}>
+            <FolderOpen className="h-7 w-7" aria-hidden />
+          </span>
+        </Float3D>
+        <div>
+          <p className="font-semibold text-white">You haven&apos;t created a resume yet.</p>
+          <p className="mt-1 max-w-sm text-sm text-slate-400">
+            Start from scratch, upload an existing resume to recreate it with AI, or explore with sample data.
+          </p>
+        </div>
+        <Button onClick={onCreate} className={GRADIENT_CTA}>
+          <Sparkles className="h-4 w-4" aria-hidden /> Create Your First Resume
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function ResumesSection({
+  onCreate,
+  onView,
+  onDelete,
+}: {
+  onCreate: () => void;
+  onView: (r: ResumeSummary) => void;
+  onDelete: (r: ResumeSummary) => void;
+}) {
+  const resumes = useResumesStore((s) => s.resumes);
+  const loading = useResumesStore((s) => s.loading);
+  const loaded = useResumesStore((s) => s.loaded);
+
+  // Fetch (forcing a refresh if the store was already loaded) once per section mount.
+  useEffect(() => {
+    void useResumesStore.getState().fetch(!useResumesStore.getState().loaded);
+  }, []);
+
+  return (
+    <div className="min-w-0">
+      <header className="flex flex-wrap items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-300/80">RESUME WORKSPACE</p>
+          <h1 className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">My Resumes</h1>
+          <p className="mt-2 text-sm text-slate-400">All of your resumes, in one place.</p>
+        </div>
+        <Button onClick={onCreate} className={GRADIENT_CTA}>
+          <Plus className="h-4 w-4" aria-hidden /> Create New Resume
+        </Button>
+      </header>
+
+      <div className="mt-6">
+        {loading && !loaded ? (
+          <>
+            <p className="sr-only" role="status">
+              Loading resumes…
+            </p>
+            <div aria-hidden className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className={GLASS + ' h-44 animate-pulse'} />
+              ))}
+            </div>
+          </>
+        ) : resumes.length === 0 ? (
+          <EmptyResumes onCreate={onCreate} />
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {resumes.map((r, i) => (
+              <Rise3D key={r.id} delay={Math.min(i, 8) * 0.04} className="h-full">
+                <ResumeCard resume={r} onView={onView} onDelete={onDelete} />
+              </Rise3D>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ─── View ──────────────────────────────────────────────────────────────────── */
 
 export function DashboardView({ section }: { section: 'overview' | 'resumes' }) {
-  const user = useAuthStore((s) => s.user);
-  const { resumes, loading, loaded, fetch } = useResumesStore();
   const [createOpen, setCreateOpen] = useState(false);
   const [viewTarget, setViewTarget] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ResumeSummary | null>(null);
   const [deleting, setDeleting] = useState(false);
-
-  const [summary, setSummary] = useState<DashboardSummary | null>(null);
-  const [summaryLoading, setSummaryLoading] = useState(true);
-  const [summaryError, setSummaryError] = useState<string | null>(null);
-
-  const loadSummary = useCallback(async () => {
-    setSummaryLoading(true);
-    setSummaryError(null);
-    try {
-      const data = await apiFetch<DashboardSummary>('/api/dashboard/summary');
-      setSummary(data);
-    } catch (e) {
-      setSummaryError((e as Error).message);
-    } finally {
-      setSummaryLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetch(!loaded);
-    loadSummary();
-  }, []);
 
   const remove = async () => {
     if (!deleteTarget) return;
@@ -471,7 +1129,6 @@ export function DashboardView({ section }: { section: 'overview' | 'resumes' }) 
       await useResumesStore.getState().remove(deleteTarget.id);
       toast.success('Resume deleted.');
       setDeleteTarget(null);
-      loadSummary();
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -479,282 +1136,38 @@ export function DashboardView({ section }: { section: 'overview' | 'resumes' }) 
     }
   };
 
-  const active = section === 'resumes' ? 'resumes' : 'overview';
-
   return (
-    <AppShell active={active}>
-      {/* Welcome */}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">
-            Welcome back, {user?.name?.split(' ')[0] ?? 'there'} <span aria-hidden>👋</span>
-          </h1>
-          <p className="mt-1 text-sm text-slate-400">
-            {section === 'overview'
-              ? 'Your AI career studio — create, improve and track resumes that get interviews.'
-              : 'All of your resumes, in one place.'}
-          </p>
-        </div>
-        <Button
-          onClick={() => setCreateOpen(true)}
-          className="min-h-[44px] bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-[0_0_24px_-6px_rgba(139,92,246,0.6)] hover:from-violet-500 hover:to-fuchsia-500"
-        >
-          <Plus className="h-4 w-4" aria-hidden /> Create New Resume
-        </Button>
-      </div>
-
-      {section === 'overview' && (
-        <>
-          {/* Score cards */}
-          {summaryLoading ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              {[0, 1, 2, 3].map((i) => (
-                <Card key={i} className={cn('h-40 animate-pulse', GLASS)} />
-              ))}
-            </div>
-          ) : summaryError ? (
-            <Card className={cn(GLASS, 'border-red-400/20')}>
-              <CardContent className="flex flex-col items-center gap-3 py-8 text-center">
-                <p className="text-sm text-red-300">{summaryError}</p>
-                <Button variant="outline" size="sm" className="border-white/10 bg-white/[0.04] text-slate-200 hover:bg-white/[0.08]" onClick={loadSummary}>
-                  <RefreshCw className="h-4 w-4" aria-hidden /> Retry
-                </Button>
-              </CardContent>
-            </Card>
-          ) : summary ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <ScoreCard
-                title="ATS Score"
-                value={summary.scores.ats}
-                hint={
-                  summary.scores.ats != null
-                    ? `AI Estimated ATS Score — ${summary.scores.atsResumeTitle ?? 'latest resume'}${summary.scores.atsTargetRole ? ` · ${summary.scores.atsTargetRole}` : ''}`
-                    : 'Run the AI Resume Analyzer to get your score.'
-                }
-                icon={Gauge}
-                delay={0}
-              >
-                {summary.scores.atsHistory.length > 1 && (
-                  <p className="mt-2 flex items-center gap-1 text-xs text-slate-500">
-                    {(() => {
-                      const h = summary.scores.atsHistory;
-                      const delta = h[h.length - 1].score - h[0].score;
-                      const Trend = delta > 0 ? TrendingUp : delta < 0 ? TrendingDown : Minus;
-                      return (
-                        <>
-                          <Trend className={cn('h-3.5 w-3.5', delta > 0 ? 'text-emerald-400' : delta < 0 ? 'text-red-400' : 'text-slate-500')} aria-hidden />
-                          {delta > 0 ? `+${delta}` : delta || '0'} pts over {h.length} runs
-                        </>
-                      );
-                    })()}
-                  </p>
-                )}
-              </ScoreCard>
-              <ScoreCard
-                title="Resume Quality"
-                value={summary.scores.quality}
-                hint={summary.scores.quality != null ? `Composite quality of "${summary.scores.qualityResumeTitle}"` : 'Create a resume to see quality.'}
-                icon={Sparkles}
-                delay={0.06}
-              />
-              <ScoreCard
-                title="Completion"
-                value={summary.scores.completion}
-                hint="How complete your latest resume content is."
-                icon={ListChecks}
-                delay={0.12}
-              >
-                <Progress value={summary.scores.completion} className="mt-3 h-1.5 bg-white/[0.06] [&>div]:bg-gradient-to-r [&>div]:from-violet-500 [&>div]:to-cyan-400" aria-label="Resume completion" />
-              </ScoreCard>
-              <ScoreCard
-                title="Profile"
-                value={summary.scores.profileCompleteness}
-                hint="Personal info completeness across your resume."
-                icon={UserRound}
-                delay={0.18}
-              >
-                <Progress value={summary.scores.profileCompleteness} className="mt-3 h-1.5 bg-white/[0.06] [&>div]:bg-gradient-to-r [&>div]:from-fuchsia-500 [&>div]:to-violet-400" aria-label="Profile completeness" />
-              </ScoreCard>
-            </div>
-          ) : null}
-
-          {/* Quick actions */}
-          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            <QuickAction icon={FilePlus2} title="Create Resume" subtitle="Start from scratch with the AI Builder" tone="violet" delay={0.1} onClick={() => setCreateOpen(true)} />
-            <QuickAction icon={Upload} title="Upload Resume" subtitle="Recreate an existing PDF/DOCX with AI" tone="blue" delay={0.14} onClick={() => setCreateOpen(true)} />
-            <QuickAction icon={ScanSearch} title="Analyze Resume" subtitle="Get your AI Estimated ATS Score" tone="cyan" delay={0.18} onClick={() => navigate('analyzer')} />
-            <QuickAction icon={Wand2} title="Improve Resume" subtitle="AI rewrites for any section" tone="fuchsia" delay={0.22} onClick={() => navigate('rewriter')} />
-            <QuickAction icon={Gauge} title="Check ATS Score" subtitle="Keyword coverage + fixes" tone="purple" delay={0.26} onClick={() => navigate('analyzer')} />
-            <QuickAction icon={MailOpen} title="Generate Cover Letter" subtitle="Tailored to any job in seconds" tone="amber" delay={0.3} onClick={() => navigate('coverletter')} />
-          </div>
-
-          {/* Recommendations + suggestions */}
-          {summary && (summary.recommendations.length > 0 || summary.latestAnalysis) && (
-            <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-              {summary.recommendations.length > 0 && (
-                <Rise3D delay={0.1}>
-                  <Card className={cn(GLASS, 'h-full')}>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="flex items-center gap-2 text-base text-slate-100">
-                        <span className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white">
-                          <Lightbulb className="h-4 w-4" aria-hidden />
-                        </span>
-                        AI Recommendations
-                      </CardTitle>
-                      <CardDescription className="text-slate-500">Personalized from your latest resume data.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-2.5">
-                      {summary.recommendations.map((rec, i) => (
-                        <div key={i} className="flex items-start gap-2.5 rounded-lg border border-white/[0.05] bg-white/[0.02] px-3 py-2.5">
-                          <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-500/20 text-[10px] font-bold text-violet-300" aria-hidden>
-                            {i + 1}
-                          </span>
-                          <p className="text-sm leading-relaxed text-slate-300">{rec}</p>
-                        </div>
-                      ))}
-                    </CardContent>
-                  </Card>
-                </Rise3D>
-              )}
-              {summary.latestAnalysis && (
-                <Rise3D delay={0.14}>
-                  <Card className={cn(GLASS, 'h-full')}>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="flex items-center gap-2 text-base text-slate-100">
-                        <span className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-cyan-600 to-blue-600 text-white">
-                          <Target className="h-4 w-4" aria-hidden />
-                        </span>
-                        Improvement Suggestions
-                      </CardTitle>
-                      <CardDescription className="text-slate-500">
-                        Latest analysis · {summary.latestAnalysis.resumeTitle} · score {summary.latestAnalysis.score}/100
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      {summary.latestAnalysis.improvements.slice(0, 4).map((imp, i) => (
-                        <div key={i} className="flex items-start gap-2 text-sm text-slate-300">
-                          <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-cyan-400" aria-hidden />
-                          <span className="leading-relaxed">{imp}</span>
-                        </div>
-                      ))}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="mt-2 min-h-[36px] border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.08] hover:text-white"
-                        onClick={() => navigate('analyzer')}
-                      >
-                        Re-run analysis <ArrowRight className="ml-1 h-3.5 w-3.5" aria-hidden />
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </Rise3D>
-              )}
-            </div>
-          )}
-
-          {/* Recent activity */}
-          {summary && summary.activities.length > 0 && (
-            <Rise3D delay={0.18} className="mt-6">
-              <Card className={GLASS}>
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-base text-slate-100">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-purple-600 to-violet-600 text-white">
-                      <ActivityIcon className="h-4 w-4" aria-hidden />
-                    </span>
-                    Recent Activity
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ol className="relative space-y-4 border-l border-white/[0.08] pl-5">
-                    {summary.activities.slice(0, 6).map((a) => {
-                      const AIcon = ACTIVITY_ICONS[a.type] ?? FileText;
-                      return (
-                        <li key={a.id} className="relative">
-                          <span className="absolute -left-[27px] flex h-4 w-4 items-center justify-center rounded-full border border-white/10 bg-[#0a0e1f]" aria-hidden>
-                            <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-violet-400 to-cyan-400" />
-                          </span>
-                          <div className="flex flex-wrap items-baseline gap-x-2">
-                            <AIcon className="h-3.5 w-3.5 text-slate-500" aria-hidden />
-                            <p className="text-sm text-slate-300">{a.message}</p>
-                            <span className="text-xs text-slate-600">{timeAgo(a.createdAt)}</span>
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ol>
-                </CardContent>
-              </Card>
-            </Rise3D>
-          )}
-
-          {/* Recent resumes */}
-          <div className="mt-8">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-white">Recent resumes</h2>
-              {resumes.length > 4 && (
-                <Button variant="ghost" size="sm" className="min-h-[36px] text-slate-400 hover:bg-white/[0.06] hover:text-white" onClick={() => navigate('resumes')}>
-                  View all <Files className="ml-1 h-4 w-4" aria-hidden />
-                </Button>
-              )}
-            </div>
-            {loading && !loaded ? (
-              <div className="grid gap-4 sm:grid-cols-2">
-                {[0, 1].map((i) => (
-                  <Card key={i} className={cn('h-40 animate-pulse', GLASS)} />
-                ))}
-              </div>
-            ) : resumes.length === 0 ? (
-              <EmptyResumes onCreate={() => setCreateOpen(true)} />
-            ) : (
-              <div className="grid gap-4 sm:grid-cols-2">
-                {resumes.slice(0, 4).map((r, i) => (
-                  <Rise3D key={r.id} delay={i * 0.05} className="h-full">
-                    <ResumeCard resume={r} onView={(res) => setViewTarget(res.id)} onDelete={setDeleteTarget} />
-                  </Rise3D>
-                ))}
-              </div>
-            )}
-          </div>
-        </>
-      )}
-
-      {section === 'resumes' && (
-        <div className="mt-2">
-          {loading && !loaded ? (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {[0, 1, 2].map((i) => (
-                <Card key={i} className={cn('h-40 animate-pulse', GLASS)} />
-              ))}
-            </div>
-          ) : resumes.length === 0 ? (
-            <EmptyResumes onCreate={() => setCreateOpen(true)} />
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {resumes.map((r, i) => (
-                <Rise3D key={r.id} delay={Math.min(i, 8) * 0.04} className="h-full">
-                  <ResumeCard resume={r} onView={(res) => setViewTarget(res.id)} onDelete={setDeleteTarget} />
-                </Rise3D>
-              ))}
-            </div>
-          )}
-        </div>
+    <AppShell active={section === 'resumes' ? 'resumes' : 'overview'}>
+      {section === 'overview' ? (
+        <OverviewHome onCreate={() => setCreateOpen(true)} />
+      ) : (
+        <ResumesSection
+          onCreate={() => setCreateOpen(true)}
+          onView={(res) => setViewTarget(res.id)}
+          onDelete={setDeleteTarget}
+        />
       )}
 
       <NewResumeDialog open={createOpen} onOpenChange={setCreateOpen} />
-      <ViewResumeDialog resumeId={viewTarget} open={!!viewTarget} onOpenChange={(o) => !o && setViewTarget(null)} />
+      <ViewResumeDialog
+        resumeId={viewTarget}
+        open={!!viewTarget}
+        onOpenChange={(o) => !o && setViewTarget(null)}
+      />
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
-        <AlertDialogContent className="border-white/[0.08] bg-[#0a0e1f]">
+        <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-slate-100">Delete “{deleteTarget?.title}”?</AlertDialogTitle>
-            <AlertDialogDescription className="text-slate-400">
-              This permanently deletes this resume along with its saved versions and analyses. This action cannot be undone.
+            <AlertDialogTitle>Delete “{deleteTarget?.title}”?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently deletes this resume along with its saved versions and analyses. This action cannot be
+              undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="border-white/10 bg-transparent text-slate-300 hover:bg-white/[0.06] hover:text-white">Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-red-600 text-white hover:bg-red-500"
+              className="bg-destructive text-white hover:bg-destructive/90"
               disabled={deleting}
               onClick={(e) => {
                 e.preventDefault();
@@ -767,31 +1180,5 @@ export function DashboardView({ section }: { section: 'overview' | 'resumes' }) 
         </AlertDialogContent>
       </AlertDialog>
     </AppShell>
-  );
-}
-
-function EmptyResumes({ onCreate }: { onCreate: () => void }) {
-  return (
-    <Card className={cn('border-dashed border-white/[0.12]', GLASS)}>
-      <CardContent className="flex flex-col items-center justify-center gap-4 py-14 text-center">
-        <Float3D duration={5}>
-          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-500/15 text-violet-300 shadow-[0_0_30px_-8px_rgba(139,92,246,0.6)]">
-            <FolderOpen className="h-7 w-7" aria-hidden />
-          </span>
-        </Float3D>
-        <div>
-          <p className="font-semibold text-slate-100">You haven&apos;t created a resume yet.</p>
-          <p className="mt-1 max-w-sm text-sm text-slate-400">
-            Start from scratch, upload an existing resume to recreate it with AI, or explore with sample data.
-          </p>
-        </div>
-        <Button
-          onClick={onCreate}
-          className="min-h-[44px] bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white hover:from-violet-500 hover:to-fuchsia-500"
-        >
-          <Sparkles className="h-4 w-4" aria-hidden /> Create Your First Resume
-        </Button>
-      </CardContent>
-    </Card>
   );
 }

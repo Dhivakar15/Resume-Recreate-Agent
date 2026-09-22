@@ -1,6 +1,5 @@
 import { db } from '@/lib/db';
 import { ok, handleError, requireUser, ApiError } from '@/lib/api-helpers';
-import { logActivity } from '@/lib/activity';
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -26,7 +25,6 @@ export async function POST(_req: Request, { params }: Params) {
         _count: { select: { versions: true, analyses: true } },
       },
     });
-    await logActivity(user.id, 'resume_created', `Duplicated resume as "${copy.title}"`);
     return ok({ resume: copy }, 201);
   } catch (e) {
     return handleError(e);

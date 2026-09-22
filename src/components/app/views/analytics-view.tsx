@@ -84,7 +84,9 @@ const LegendText = (value: React.ReactNode): React.ReactNode => (
 
 // ─── Main view ───────────────────────────────────────────────────────────────
 
-export function AnalyticsView() {
+export function AnalyticsView({
+  initialSection,
+}: { initialSection?: 'overview' | 'skills' } = {}) {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -105,6 +107,17 @@ export function AnalyticsView() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Deep link (#/analytics/skills): scroll the skills-progress section into
+  // view once content has rendered.
+  useEffect(() => {
+    if (initialSection !== 'skills' || typeof window === 'undefined') return;
+    if (loading) return;
+    const timer = window.setTimeout(() => {
+      document.getElementById('skills-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [initialSection, loading]);
 
   const isEmpty = !!data && data.totals.resumes + data.totals.versions + data.totals.analyses + data.totals.applications + data.totals.coverLetters === 0;
 
@@ -339,7 +352,7 @@ export function AnalyticsView() {
 
           {/* Skills by category */}
           <Rise3D delay={0.22}>
-            <Card className={GLASS}>
+            <Card id="skills-section" className={cn(GLASS, 'scroll-mt-24')}>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base text-slate-100">Skills by Category</CardTitle>
                 <CardDescription className="text-slate-500">Skills found across your resumes, grouped by category.</CardDescription>

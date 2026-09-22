@@ -21,10 +21,10 @@ model User {
   updatedAt       DateTime         @updatedAt
   resumes         Resume[]
   jobDescriptions JobDescription[]
-  activities      Activity[]
-  notifications   Notification[]
   applications    Application[]
+  notifications   Notification[]
   coverLetters    CoverLetter[]
+  activities      Activity[]
 }
 
 model Resume {
@@ -80,49 +80,29 @@ model AIAnalysis {
   createdAt  DateTime @default(now())
 }
 
-// ─── Dashboard platform models (feat-9) ──────────────────────────────────────
-
-model Activity {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  // "resume_created" | "analysis" | "job_match" | "cover_letter" | "application" | "version_saved" | "resume_optimized" | ...
-  type      String
-  message   String
-  createdAt DateTime @default(now())
-
-  @@index([userId, createdAt])
-}
-
-model Notification {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  // "suggestion" | "missing_info" | "score_change" | "application_reminder"
-  type      String   @default("suggestion")
-  title     String
-  body      String
-  read      Boolean  @default(false)
-  createdAt DateTime @default(now())
-
-  @@index([userId, read])
-}
-
 model Application {
   id            String    @id @default(cuid())
   userId        String
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   company       String
   role          String
-  // "Applied" | "Shortlisted" | "Interview" | "Selected" | "Rejected"
   status        String    @default("Applied")
-  appliedDate   DateTime?
+  appliedDate   DateTime  @default(now())
   interviewDate DateTime?
   notes         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+}
 
-  @@index([userId])
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  body      String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
 }
 
 model CoverLetter {
@@ -133,11 +113,17 @@ model CoverLetter {
   resume    Resume?  @relation(fields: [resumeId], references: [id], onDelete: SetNull)
   company   String
   role      String
-  // "professional" | "formal" | "short"
-  tone      String   @default("professional")
+  tone      String
   content   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
 
-  @@index([userId])
+model Activity {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  message   String
+  createdAt DateTime @default(now())
 }

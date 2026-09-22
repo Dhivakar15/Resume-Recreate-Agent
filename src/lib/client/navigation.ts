@@ -8,10 +8,10 @@ export type ViewName =
   | 'resumes'
   | 'builder'
   | 'analyzer'
-  | 'jobmatch'
   | 'rewriter'
   | 'templates'
   | 'versions'
+  | 'jobmatch'
   | 'coverletter'
   | 'skillgap'
   | 'career'
@@ -36,10 +36,10 @@ const VIEWS: ViewName[] = [
   'resumes',
   'builder',
   'analyzer',
-  'jobmatch',
   'rewriter',
   'templates',
   'versions',
+  'jobmatch',
   'coverletter',
   'skillgap',
   'career',
@@ -51,6 +51,10 @@ const VIEWS: ViewName[] = [
   'analytics',
   'settings',
 ];
+
+const PUBLIC_VIEWS: ViewName[] = ['landing', 'login', 'register'];
+
+export const PROTECTED_VIEWS: ViewName[] = VIEWS.filter((view) => !PUBLIC_VIEWS.includes(view));
 
 export function parseHash(): AppRoute {
   if (typeof window === 'undefined') return { view: 'landing' };
@@ -67,24 +71,3 @@ export function navigate(view: ViewName, id?: string) {
     window.location.hash = hash;
   }
 }
-
-export const PROTECTED_VIEWS: ViewName[] = [
-  'dashboard',
-  'resumes',
-  'builder',
-  'analyzer',
-  'jobmatch',
-  'rewriter',
-  'templates',
-  'versions',
-  'coverletter',
-  'skillgap',
-  'career',
-  'projectgen',
-  'linkedin',
-  'interview',
-  'mockinterview',
-  'tracker',
-  'analytics',
-  'settings',
-];

@@ -75,7 +75,7 @@ export function AppRoot() {
   const isProtected = PROTECTED_VIEWS.includes(route.view);
   if (status === 'guest' && isProtected) {
     return (
-      <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
+      <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange forcedTheme="dark">
         <AuthView mode="login" />
         <Toaster />
       </ThemeProvider>
@@ -98,17 +98,17 @@ export function AppRoot() {
     case 'analyzer':
       content = <AnalyzerView preselectedId={route.id} />;
       break;
-    case 'jobmatch':
-      content = <JobMatchView preselectedId={route.id} />;
-      break;
     case 'rewriter':
-      content = route.id ? <RewriterView preselectedId={route.id} /> : <RewriterView />;
+      content = <RewriterView preselectedId={route.id} />;
       break;
     case 'templates':
       content = <TemplatesView />;
       break;
     case 'versions':
-      content = route.id ? <VersionsView preselectedId={route.id} /> : <VersionsView />;
+      content = <VersionsView preselectedId={route.id} />;
+      break;
+    case 'jobmatch':
+      content = <JobMatchView preselectedId={route.id} />;
       break;
     case 'coverletter':
       content = <CoverLetterView />;
@@ -135,7 +135,7 @@ export function AppRoot() {
       content = <TrackerView />;
       break;
     case 'analytics':
-      content = <AnalyticsView />;
+      content = <AnalyticsView initialSection={route.id === 'skills' ? 'skills' : undefined} />;
       break;
     case 'settings':
       content = <SettingsView />;
@@ -145,7 +145,7 @@ export function AppRoot() {
   }
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange forcedTheme="dark">
       {content}
       <Toaster position="top-right" richColors closeButton />
     </ThemeProvider>
