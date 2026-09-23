@@ -297,3 +297,24 @@ Work Log:
 Stage Summary:
 - Dashboard upgrade (feat-9) is live end-to-end: 14 previously-orphaned views wired into a grouped Midnight-Glass sidebar, backend complete, Dashboard Home real-data driven. One intentional design change: theme toggle removed from shell — dashboard experience is always-dark per the Midnight Glass design system (matches landing/auth).
 - Screenshots: shots/fix9-*.png
+
+---
+Task ID: fix-upload-404
+Agent: Z.ai Code (main)
+Task: Fix "Request failed (404)" on Dashboard → Create New Resume → Upload existing resume → Choose File
+
+Work Log:
+- Traced frontend flow: new-resume-dialog.tsx → apiFetch POST /api/upload with FormData field `file` (expects { text, fileName, characters })
+- Root cause confirmed: src/app/api/upload/route.ts did not exist — Next.js returned 404 (dev.log showed repeated `POST /api/upload 404`)
+- Dependencies for parsing were already installed but unused: unpdf 1.8.1 (PDF), mammoth 1.12.3 (DOCX)
+- Created POST /api/upload (src/app/api/upload/route.ts, runtime nodejs): requireUser auth (cookie+Bearer), rate limit 12/min, 5 MB limit (413), extension+MIME detect (415), magic-byte sniffing %PDF- / PK\x03\x04 with mismatch errors (415), password-protected/corrupt PDF friendly errors (422), scanned/image-only PDF detection (422), whitespace cleanup, 200k char guard, returns { ok, data: { text, fileName, characters, kind, bytes } }
+- Verified via tsc --noEmit (src clean) and eslint (0 issues)
+- curl matrix: PDF 200, DOCX 200, .txt 415, PDF-renamed-.docx 415 mismatch, no-auth 401, 6MB 413, missing field 400 — all pass
+- Browser E2E (agent-browser, carol-no-cookie@example.com): Dashboard → Create New Resume → Upload existing resume → chose test-resume.pdf → toast "Extracted 165 characters" → Recreate with AI → /api/ai/recreate 200 → POST /api/resumes 201 → navigated to builder → resume "test-resume" appears in Recent Resumes. Repeated with test-resume.docx → "Extracted 395 characters". Zero console errors, zero page errors
+- No changes to UI design, auth, stores, or existing features
+
+Stage Summary:
+- Root cause: missing backend route POST /api/upload (frontend called an endpoint that never existed)
+- New artifact: src/app/api/upload/route.ts
+- Endpoint contract: POST /api/upload, multipart/form-data field `file`, PDF/DOCX ≤5MB, auth required, returns { ok: true, data: { text, fileName, characters, kind, bytes } }
+- Relative-path API URL works in dev + preview/production (no hardcoded hosts, same-origin, CORS N/A)
