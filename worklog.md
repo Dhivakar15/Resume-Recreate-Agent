@@ -318,3 +318,16 @@ Stage Summary:
 - New artifact: src/app/api/upload/route.ts
 - Endpoint contract: POST /api/upload, multipart/form-data field `file`, PDF/DOCX ≤5MB, auth required, returns { ok: true, data: { text, fileName, characters, kind, bytes } }
 - Relative-path API URL works in dev + preview/production (no hardcoded hosts, same-origin, CORS N/A)
+
+---
+Task ID: fix-preview-link-expired
+Agent: Z.ai Code (main)
+Task: User reported "link can't open in new tab — Project expired and recycled"
+
+Work Log:
+- Diagnosed: app itself fully healthy — dev server up on port 3000 (HTTP 200), landing page renders, login works (carol-no-cookie@example.com), GET /api/dashboard/summary 200, db/custom.db intact (118KB)
+- Root cause: sandbox platform recycled the public preview session; the old "Open in New Tab" URL died. This is platform-level, not an app bug
+- Browser sanity check via agent-browser: page title + visitor CTAs render, zero page errors
+
+Stage Summary:
+- No code changes needed. User must use the CURRENT Preview Panel's "Open in New Tab" (fresh URL is generated per session); old/bookmarked links from before the recycle cannot be revived
