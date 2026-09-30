@@ -331,3 +331,20 @@ Work Log:
 
 Stage Summary:
 - No code changes needed. User must use the CURRENT Preview Panel's "Open in New Tab" (fresh URL is generated per session); old/bookmarked links from before the recycle cannot be revived
+
+---
+Task ID: export-source-code
+Agent: Z.ai Code (main)
+Task: User requested the project code as a downloadable archive
+
+Work Log:
+- CRITICAL discovery during packaging: the sandbox recycle lost exactly one file — src/app/api/upload/route.ts (silent loss; API routes are filesystem-discovered so the app compiled fine, but POST /api/upload would 404 again). Restored the file byte-identical from the fix-upload-404 implementation; re-verified curl matrix: PDF 200, DOCX 200, TXT 415, no-auth 401; eslint clean
+- All other feat-9 artifacts verified intact post-recycle: 19 worklog entries, prisma models (Application/Notification/CoverLetter/Activity), ai.ts 10 AI functions, navigation union, all 21 views, 15 ai/* routes
+- Wrote SETUP.md (local run guide: install → db:push → dev, AI_API_KEY note, deployment pointers)
+- Built resume-recreate-agent-ai-source.zip (441 KB, 231 files): src/ prisma/ public/ db/custom.db package.json bun.lock tsconfig next.config tailwind postcss eslint components.json .gitignore README .env SETUP.md Caddyfile worklog.md — excludes node_modules/.next/.git/skills/examples/shots/tests/.zscripts
+- Distributed 3 places: project root, download/ (platform file area), public/ (served at /resume-recreate-agent-ai-source.zip via preview URL; verified HTTP 200, valid zip)
+- Test assets moved to persistent /home/z/.upload-test/ (survives /tmp wipes)
+
+Stage Summary:
+- User can download full source via: (a) platform download/ folder → resume-recreate-agent-ai-source.zip, or (b) preview URL path /resume-recreate-agent-ai-source.zip
+- POST /api/upload restored after recycle-induced file loss — upload feature re-verified working
