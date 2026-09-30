@@ -348,3 +348,18 @@ Work Log:
 Stage Summary:
 - User can download full source via: (a) platform download/ folder → resume-recreate-agent-ai-source.zip, or (b) preview URL path /resume-recreate-agent-ai-source.zip
 - POST /api/upload restored after recycle-induced file loss — upload feature re-verified working
+
+---
+Task ID: vercel-deploy-prep
+Agent: Z.ai Code (main)
+Task: User asked which Root Directory to use when deploying to Vercel; prep project for Vercel
+
+Work Log:
+- Answered: Root Directory = folder containing package.json → './' (repo root) or the subfolder name if zip extracted as a subfolder
+- Vercel-blocking fixes applied: next.config.ts removed output:"standalone" (sandbox/Docker-specific); package.json build script changed from "next build && cp -r ..." to plain "next build"; added "postinstall": "prisma generate"
+- Flagged critical runtime blocker: SQLite cannot run on Vercel (read-only FS) — documented Neon/Vercel-Postgres/Supabase switch: one-line provider change in prisma/schema.prisma + npx prisma db push (NOT changed in repo — would break sandbox dev DB)
+- Wrote DEPLOY-VERCEL.md: root-directory answer, GitHub push steps, Vercel import settings, env vars (DATABASE_URL, AI_API_KEY), Postgres migration, troubleshooting table
+- Rebuilt + redistributed resume-recreate-agent-ai-source.zip (465 KB, now includes DEPLOY-VERCEL.md) to root, download/, public/; verified app still healthy (200)
+
+Stage Summary:
+- Zip is now Vercel-ready except the user must switch prisma provider to postgresql + db push against a cloud DB (documented step-by-step in DEPLOY-VERCEL.md inside the zip)
