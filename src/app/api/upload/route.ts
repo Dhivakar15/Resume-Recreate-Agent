@@ -39,13 +39,27 @@ function cleanText(raw: string): string {
     .slice(0, MAX_TEXT_CHARS);
 }
 
+/** Hard ceiling so a pathological file can never hang the request until the
+ *  gateway kills it with an opaque 502 — the client gets a real error instead. */
+const EXTRACT_TIMEOUT_MS = 25_000;
+
+function withTimeout<T>(task: Promise<T>, what: string): Promise<T> {
+  return Promise.race([
+    task,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => new ApiError(`Reading this ${what} took too long and was cancelled. If the file is very large or image-heavy, try a smaller or text-based version.`, 422), EXTRACT_TIMEOUT_MS),
+    ),
+  ]);
+}
+
 async function extractPdf(buffer: ArrayBuffer): Promise<string> {
   const { extractText, getDocumentProxy } = await import('unpdf');
   try {
-    const pdf = await getDocumentProxy(new Uint8Array(buffer));
-    const { text } = await extractText(pdf, { mergePages: true });
+    const pdf = await withTimeout(getDocumentProxy(new Uint8Array(buffer)), 'PDF');
+    const { text } = await withTimeout(extractText(pdf, { mergePages: true }), 'PDF');
     return Array.isArray(text) ? text.join('\n') : text;
   } catch (e) {
+    if (e instanceof ApiError) throw e;
     const msg = e instanceof Error ? e.message.toLowerCase() : '';
     if (msg.includes('password') || msg.includes('encrypt')) {
       throw new ApiError('This PDF is password-protected. Please remove the password and try again.', 422);
@@ -57,9 +71,10 @@ async function extractPdf(buffer: ArrayBuffer): Promise<string> {
 async function extractDocx(buffer: ArrayBuffer): Promise<string> {
   const mammoth = (await import('mammoth')).default;
   try {
-    const { value } = await mammoth.extractRawText({ buffer: Buffer.from(buffer) });
+    const { value } = await withTimeout(mammoth.extractRawText({ buffer: Buffer.from(buffer) }), 'DOCX');
     return value;
-  } catch {
+  } catch (e) {
+    if (e instanceof ApiError) throw e;
     throw new ApiError('We could not read this DOCX file. It may be corrupted — try re-saving it from Word, or upload a PDF instead.', 422);
   }
 }
