@@ -381,3 +381,20 @@ Stage Summary:
 - Local/preview instance: upload works again (verified)
 - Deployed instance: needs one REDEPLOY from the platform UI to build from committed code containing the route
 - Git now carries the full correct state (commits 4ce1cc8 + follow-up) — sync wipes are self-healing via git checkout
+
+---
+Task ID: fix-upload-502-serverless
+Agent: Z.ai Code (main)
+Task: User reported "first upload + analyze works, subsequent uploads fail" with Request failed (502) on their deployed instance
+
+Work Log:
+- Diagnosed: sandbox dev.log had no failed uploads → 502 happened on the user's DEPLOYED build; old deploy URL now 410 (expired) → they were on a newer deployment where the upload route EXISTS but crashes at runtime
+- Root cause found in unpdf source: it calls import.meta.resolve('pdfjs-dist/package.json') at RUNTIME (line 69 of dist/index.mjs) — works in dev with real node_modules, crashes when Next.js bundles the route for production serverless → function dies → gateway 502. Explains "works once then fails" (module/cold-cache timing) and DOCX-vs-PDF differences (mammoth bundles cleanly)
+- Fix 1: next.config.ts serverExternalPackages: ['unpdf','mammoth'] — parsers stay unbundled, loaded from node_modules at runtime in production (platform sync had ALSO reverted next.config.ts to output:standalone again; re-removed standalone in same write)
+- Fix 2: upload route hardened with 25s Promise.race timeout guard (withTimeout) on PDF+DOCX extraction → pathological files now return friendly 422 instead of opaque gateway 502; ApiError rethrow preserved so friendly messages unaffected
+- Regression: sequential uploads small-PDF 200 (0.43s), 40-page PDF 200 (0.36s), DOCX 200 (0.11s), PDF-again 200 (0.02s); eslint 0; tsc src clean
+- Committed twice (git protection against sync wipes); rebuilt + redistributed zip (231 files) to root/download/public; verified zip contains withTimeout + serverExternalPackages and no standalone
+
+Stage Summary:
+- User action required: REDEPLOY (their current deployment predates the fix). On Vercel the zip now deploys without the 502
+- Durable lesson recorded: platform file-sync can revert config files — verify next.config.ts/package.json after any sync; git commits are the recovery path
