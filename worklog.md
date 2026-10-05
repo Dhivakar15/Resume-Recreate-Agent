@@ -363,3 +363,21 @@ Work Log:
 
 Stage Summary:
 - Zip is now Vercel-ready except the user must switch prisma provider to postgresql + db push against a cloud DB (documented step-by-step in DEPLOY-VERCEL.md inside the zip)
+
+---
+Task ID: fix-upload-404-deployed
+Agent: Z.ai Code (main)
+Task: User's DEPLOYED instance (hfpijoy5hhmf-deploy.space-z.ai) returned 404 on resume upload
+
+Work Log:
+- Root cause: platform file-sync deleted src/app/api/upload/route.ts from the working tree AGAIN (git status: " D", file tracked in HEAD) and reverted next.config.ts to output:standalone — the user's deployment was built from the wiped snapshot → POST /api/upload 404 in production
+- Restored route via git checkout -- src/app/api/upload/route.ts (HEAD contained the correct version); verified locally: POST /api/upload → 401 (route live)
+- Re-applied next.config.ts fix (removed output:standalone); package.json fixes had survived (plain next build + postinstall prisma generate)
+- PERMANENT FIX: git add -A && git commit (4ce1cc8 "fix: restore upload route (platform sync wipe) + Vercel-ready config") — working tree == HEAD, so future platform syncs restore the correct state; second commit for rebuilt zip
+- Rebuilt resume-recreate-agent-ai-source.zip (231 files) from committed state; verified inside zip: upload route ✓, config Vercel-safe ✓, postinstall ✓, DEPLOY-VERCEL.md ✓; redistributed to root + download/ + public/
+- Probed user's deploy URL: POST /api/upload → 410 from platform edge (no working upload route in that build) — user must REDEPLOY to pick up committed code
+
+Stage Summary:
+- Local/preview instance: upload works again (verified)
+- Deployed instance: needs one REDEPLOY from the platform UI to build from committed code containing the route
+- Git now carries the full correct state (commits 4ce1cc8 + follow-up) — sync wipes are self-healing via git checkout
