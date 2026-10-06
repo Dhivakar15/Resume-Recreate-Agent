@@ -109,10 +109,24 @@ export function NewResumeDialog({
     try {
       const form = new FormData();
       form.append('file', f);
-      const data = await apiFetch<{ text: string; fileName: string; characters: number }>('/api/upload', {
-        method: 'POST',
-        body: form,
-      });
+      // Primary endpoint, with an automatic fallback twin. Some hosting
+      // platforms have been observed to wipe one of the two route files
+      // during deploys; trying both keeps resume upload working.
+      let data: { text: string; fileName: string; characters: number };
+      try {
+        data = await apiFetch<{ text: string; fileName: string; characters: number }>('/api/upload', {
+          method: 'POST',
+          body: form,
+        });
+      } catch (primaryError) {
+        if (!/\((404|405)\)/.test((primaryError as Error).message)) throw primaryError;
+        const retryForm = new FormData();
+        retryForm.append('file', f);
+        data = await apiFetch<{ text: string; fileName: string; characters: number }>('/api/resumes/parse', {
+          method: 'POST',
+          body: retryForm,
+        });
+      }
       setExtractedText(data.text);
       if (!title.trim()) setTitle(data.fileName.replace(/\.(pdf|docx)$/i, '').slice(0, 60));
       toast.success(`Extracted ${data.characters.toLocaleString()} characters from ${data.fileName}.`);
