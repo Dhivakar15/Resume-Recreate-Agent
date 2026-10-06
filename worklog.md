@@ -398,3 +398,23 @@ Work Log:
 Stage Summary:
 - User action required: REDEPLOY (their current deployment predates the fix). On Vercel the zip now deploys without the 502
 - Durable lesson recorded: platform file-sync can revert config files — verify next.config.ts/package.json after any sync; git commits are the recovery path
+
+---
+Task ID: fix-upload-404-round3-selfhealing
+Agent: Z.ai Code (main)
+Task: Third occurrence of upload 404 — user's latest attempts visible in dev.log (5x POST /api/upload 404)
+
+Work Log:
+- Confirmed root cause pattern: platform file-sync deletes src/app/api/upload/route.ts from the working tree on deploy/publish events (git status showed deletion again; next.config.ts also reverted to output:standalone again). Restored route from git, re-applied config
+- Engineered a durable, self-healing solution instead of another one-off restore:
+  1. src/lib/resume-parse.ts — all parsing/validation/timeout logic moved to a shared lib (libs never wiped by sync)
+  2. POST /api/upload — thin primary handler using the lib
+  3. POST /api/resumes/parse — identical twin handler nested under the long-lived resumes/ directory (nested dirs under surviving trees have never been wiped)
+  4. new-resume-dialog.tsx — on 404/405 from primary endpoint, silently retries the twin (no user-visible difference)
+- Verification: eslint 0, tsc src clean, both endpoints 200 for PDF+DOCX sequential uploads, no-auth 401, browser E2E: dashboard → dialog → upload PDF → "Extracted 165 characters" toast
+- Committed (2 commits), rebuilt + redistributed zip (234 files, includes twin route + shared lib)
+
+Stage Summary:
+- Upload now survives single-file wipes: if /api/upload vanishes again, the client transparently uses /api/resumes/parse
+- If BOTH files were ever wiped, restore via: git checkout -- src/app/api/upload/route.ts
+- User should re-test immediately (preview works now) and redeploy for their deployed instance
