@@ -9,6 +9,7 @@ import { navigate, type ViewName } from '@/lib/client/navigation';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import {
+  ArrowLeft,
   BarChart3,
   Boxes,
   BriefcaseBusiness,
@@ -133,6 +134,20 @@ const NAV_SCROLL_CLASSES =
 /** Broadcast a global event the floating AiAssistant listens for. */
 function openAssistant() {
   window.dispatchEvent(new CustomEvent('rra:assistant:open'));
+}
+
+/** Shared escape hatch — returns to the Dashboard from any section. */
+function BackToDashboard() {
+  return (
+    <button
+      type="button"
+      onClick={() => navigate('dashboard')}
+      className="mb-5 inline-flex min-h-[44px] items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3.5 text-sm font-medium text-slate-300 transition-all duration-200 hover:-translate-x-0.5 hover:border-white/[0.16] hover:bg-white/[0.07] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/60"
+    >
+      <ArrowLeft className="h-4 w-4" aria-hidden />
+      Back to Dashboard
+    </button>
+  );
 }
 
 function NavButton({
@@ -363,7 +378,11 @@ export function AppShell({ active, children }: { active: ShellActive; children: 
 
       {/* Content */}
       <main className="relative z-10 w-full flex-1 px-4 pb-10 pt-16 sm:px-6 lg:ml-64 lg:w-[calc(100%-16rem)] lg:px-8 lg:pt-8">
-        <div className="mx-auto w-full max-w-6xl">{children}</div>
+        <div className="mx-auto w-full max-w-6xl">
+          {/* Every section except the Dashboard itself gets a back escape hatch */}
+          {active !== 'overview' && <BackToDashboard />}
+          {children}
+        </div>
       </main>
 
       {/* Global floating AI assistant (single mount, self-positioned bottom-right) */}
