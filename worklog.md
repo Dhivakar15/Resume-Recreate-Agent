@@ -440,3 +440,19 @@ Stage Summary:
 - All resume outputs (preview, PDF download, LaTeX) are now pure black & white for ALL resumes including existing ones — colors live in the template, not the data, so no migration needed
 - Color fix committed (bfbc9a1); user must REDEPLOY on their deployment to get it
 - Upload 404 self-healing held: twin route /api/resumes/parse was alive while primary was wiped
+
+---
+Task ID: back-button-all-sections
+Agent: Z.ai Code (main)
+Task: User reported no easy way to go back after entering any section from the sidebar — add a Back button to every section
+
+Work Log:
+- Explored shell architecture: all 17 sidebar sections mount the shared <AppShell active="..."> in src/components/app/app-shell.tsx — chose a single shell-level solution instead of editing 17 views
+- Added BackToDashboard component (ArrowLeft icon + label, Midnight Glass styling, 44px touch target, hover shift, focus ring) rendered inside <main> when active !== 'overview'
+- Hidden on Dashboard home only; shown for resumes (View all), builder, analyzer, rewriter, templates, versions, jobmatch, coverletter, skillgap, career, projectgen, linkedin, interview, mockinterview, tracker, analytics, settings
+- Verification: agent-browser E2E — dashboard shows 0 back buttons (correct); Analyzer shows button and ref-click navigates to #/dashboard; sweep of all 16 other sections via direct hash entry → back=1 everywhere (proves deep-link entry too); mobile 390x844 screenshot: button sits cleanly below fixed top bar, no overlap; 0 console errors
+- eslint + tsc clean; committed 8fe9f77; source zip rebuilt (B&W fix + back button included) and redistributed to root/download/public
+
+Stage Summary:
+- Navigation UX fixed with one 20-line change; future sections added via AppShell automatically get the back button
+- User must REDEPLOY their deployment to receive this (and the earlier B&W fix)
