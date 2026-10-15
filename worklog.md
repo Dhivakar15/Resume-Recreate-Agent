@@ -418,3 +418,25 @@ Stage Summary:
 - Upload now survives single-file wipes: if /api/upload vanishes again, the client transparently uses /api/resumes/parse
 - If BOTH files were ever wiped, restore via: git checkout -- src/app/api/upload/route.ts
 - User should re-test immediately (preview works now) and redeploy for their deployed instance
+
+---
+Task ID: bw-resume-templates
+Agent: Z.ai Code (main)
+Task: User wanted AI-created resumes to be fully black & white — green section headings and green lines must become black
+
+Work Log:
+- Located ALL three surfaces where the green/teal accent appeared in the resume DOCUMENT (app UI teal intentionally untouched — it is not part of the resume):
+  1. src/components/resume/templates/modern-template.tsx — live preview: border-teal-600 underline + text-teal-700 headings/title/URLs → border-neutral-900 + text-neutral-900 (URLs → neutral-600)
+  2. src/lib/pdf.ts — server-side PDF: modern theme accent/ruleColor rgb(0.05,0.42,0.40) teal → rgb(0.1,0.1,0.12) near-black
+  3. src/lib/latex.ts — LaTeX export: removed \\definecolor{accent}{RGB}{10,90,86}, xcolor package, and \\color{accent} → default black sections
+- Verified live preview via agent-browser E2E (login → open test-resume in builder): PROFESSIONAL SUMMARY / SKILLS headings render black text with black rules; zero console errors
+- Verified PDF export: decompressed content streams — fills only {0.06/0.1/0.13/0.18} grays, strokes only 0.1 0.1 0.12, no teal
+- Verified LaTeX export: no definecolor/xcolor/color directives remain
+- eslint 0, tsc src clean; committed bfbc9a1
+- Platform sync wipe #4 detected during this task: src/app/api/upload/route.ts deleted again → restored via git checkout + committed; next.config.ts/package.json verified intact (serverExternalPackages present, no standalone)
+- Rebuilt + redistributed source zip (234 files) to root/download/public; zip verified: no teal, PDF B&W, both upload routes present
+
+Stage Summary:
+- All resume outputs (preview, PDF download, LaTeX) are now pure black & white for ALL resumes including existing ones — colors live in the template, not the data, so no migration needed
+- Color fix committed (bfbc9a1); user must REDEPLOY on their deployment to get it
+- Upload 404 self-healing held: twin route /api/resumes/parse was alive while primary was wiped
