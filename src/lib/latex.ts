@@ -31,8 +31,6 @@ function bullets(description: string): string {
  */
 export function generateLatex(data: ResumeData, template: ResumeTemplate = 'modern'): string {
   const p = data.personal;
-  const accent = template === 'professional' ? '' : '% accent for section titles\n\\definecolor{accent}{RGB}{10,90,86}';
-
   const contactItems = [p.email, p.phone, p.location, p.linkedin, p.github, p.portfolio]
     .map((c) => c.trim())
     .filter(Boolean);
@@ -159,13 +157,11 @@ export function generateLatex(data: ResumeData, template: ResumeTemplate = 'mode
 \\usepackage[${template === 'minimal' ? 'margin=0.9in' : 'margin=0.6in'}]{geometry}
 \\usepackage{enumitem}
 \\usepackage{titlesec}
-\\usepackage{xcolor}
 \\usepackage[hidelinks]{hyperref}
-${accent}
 \\pagestyle{empty}
 \\setlength{\\parindent}{0pt}
 ${template === 'professional' ? "\\usepackage{times}" : "\\usepackage[sfdefault,light]{FiraSans}"}
-\\titleformat{\\section}{\\large\\bfseries${template === 'professional' ? '' : '\\color{accent}'}}{}{0em}{}[\\vspace{-6pt}\\rule{\\textwidth}{0.5pt}]
+\\titleformat{\\section}{\\large\\bfseries}{}{0em}{}[\\vspace{-6pt}\\rule{\\textwidth}{0.5pt}]
 \\titlespacing{\\section}{0pt}{10pt}{6pt}
 
 \\begin{document}

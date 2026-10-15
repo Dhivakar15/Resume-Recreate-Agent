@@ -32,7 +32,7 @@ const THEMES: Record<ResumeTemplate, Theme> = {
   modern: {
     nameSize: 26, titleSize: 11.5, headSize: 10.5, entrySize: 10.5, bodySize: 9.5, metaSize: 9,
     lineHeightFactor: 1.38,
-    accent: rgb(0.05, 0.42, 0.40), ruleColor: rgb(0.05, 0.42, 0.40), centerHeader: true, serif: false,
+    accent: rgb(0.1, 0.1, 0.12), ruleColor: rgb(0.1, 0.1, 0.12), centerHeader: true, serif: false,
   },
   professional: {
     nameSize: 23, titleSize: 11, headSize: 11, entrySize: 10.5, bodySize: 10, metaSize: 9,

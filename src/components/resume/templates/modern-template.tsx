@@ -6,7 +6,7 @@ import { contactItems, dateRange, skillGroups, splitBullets } from './shared';
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
   <section className="mt-4">
-    <h2 className="border-b-2 border-teal-600 pb-1 text-[11px] font-bold uppercase tracking-[0.14em] text-teal-700">
+    <h2 className="border-b-2 border-neutral-900 pb-1 text-[11px] font-bold uppercase tracking-[0.14em] text-neutral-900">
       {title}
     </h2>
     <div className="mt-2 space-y-2.5">{children}</div>
@@ -24,7 +24,7 @@ function Bullets({ text }: { text: string }) {
   );
 }
 
-/** Template 1 — Modern ATS: clean sans-serif, teal accents, centered header. */
+/** Template 1 — Modern ATS: clean sans-serif, pure black & white, centered header. */
 export function ModernTemplate({ data }: { data: ResumeData }) {
   const d = data;
   const p = d.personal;
@@ -36,7 +36,7 @@ export function ModernTemplate({ data }: { data: ResumeData }) {
     <div className="p-8 font-sans text-neutral-900">
       <header className="text-center">
         <h1 className="text-[26px] font-bold tracking-tight">{p.fullName || 'Your Name'}</h1>
-        {p.professionalTitle && <p className="mt-0.5 text-[12px] font-medium text-teal-700">{p.professionalTitle}</p>}
+        {p.professionalTitle && <p className="mt-0.5 text-[12px] font-medium text-neutral-900">{p.professionalTitle}</p>}
         {contacts.length > 0 && (
           <p className="mt-1.5 text-[10.5px] leading-relaxed text-neutral-600">{contacts.join('  |  ')}</p>
         )}
@@ -102,7 +102,7 @@ export function ModernTemplate({ data }: { data: ResumeData }) {
               <div className="flex items-baseline justify-between gap-3">
                 <p className="text-[12px] font-bold">{e.name}</p>
                 {(e.githubUrl || e.liveUrl) && (
-                  <p className="shrink-0 text-[9.5px] text-teal-700">{[e.githubUrl, e.liveUrl].filter(Boolean).join(' | ')}</p>
+                  <p className="shrink-0 text-[9.5px] text-neutral-600">{[e.githubUrl, e.liveUrl].filter(Boolean).join(' | ')}</p>
                 )}
               </div>
               {e.role && <p className="text-[10px] italic text-neutral-500">{e.role}</p>}
@@ -142,7 +142,7 @@ export function ModernTemplate({ data }: { data: ResumeData }) {
                 <p className="text-[11.5px] font-semibold">{[c.name, c.organization].filter(Boolean).join(' — ')}</p>
                 <p className="shrink-0 text-[10px] text-neutral-500">{c.date}</p>
               </div>
-              {c.credentialUrl && <p className="text-[9.5px] text-teal-700">{c.credentialUrl}</p>}
+              {c.credentialUrl && <p className="text-[9.5px] text-neutral-600">{c.credentialUrl}</p>}
             </div>
           ))}
         </Section>
