@@ -164,3 +164,5 @@ Everything else — including the JSON resume payloads — is portable as-is.
 ## 📄 Disclaimer
 
 The **AI Estimated ATS Score** and job-match scores are heuristic estimates generated from your resume content and the target role/job description. They are **not** official scores from any real Applicant Tracking System and are provided for guidance only.
+#   R e s u m e - R e c r e a t e - A g e n t  
+ 
