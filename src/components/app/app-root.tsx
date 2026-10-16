@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ThemeProvider } from 'next-themes';
 import { useAuthStore } from '@/stores/auth-store';
 import { parseHash, navigate, PROTECTED_VIEWS, type AppRoute } from '@/lib/client/navigation';
 import { Loader2 } from 'lucide-react';
@@ -75,10 +74,10 @@ export function AppRoot() {
   const isProtected = PROTECTED_VIEWS.includes(route.view);
   if (status === 'guest' && isProtected) {
     return (
-      <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange forcedTheme="dark">
+      <>
         <AuthView mode="login" />
         <Toaster />
-      </ThemeProvider>
+      </>
     );
   }
 
@@ -145,9 +144,9 @@ export function AppRoot() {
   }
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange forcedTheme="dark">
+    <>
       {content}
       <Toaster position="top-right" richColors closeButton />
-    </ThemeProvider>
+    </>
   );
 }
